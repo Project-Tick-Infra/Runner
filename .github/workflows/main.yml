@@ -1,0 +1,42 @@
+name: Shadow Bridge Runner
+on: 
+  workflow_dispatch:
+    inputs:
+      project_id: { required: true }
+      project_full_name: { required: true }
+      branch: { required: true }
+      sha: { required: true }
+      gitlab_url: { required: true }
+
+jobs:
+  build-and-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify GitLab (Running)
+        run: |
+          curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=running&context=Shadow-Runner"
+
+      - name: Fetch Code from Private GitLab
+        run: |
+          # GitLab'dan kodu çekiyoruz (Token kullanarak)
+          git clone --branch ${{ github.event.inputs.branch }} \
+          https://oauth2:${{ secrets.GL_BRIDGE_TOKEN }}@git.projecttick.org/${{ github.event.inputs.project_full_name }}.git .
+
+      - name: 🔨 Execute Build/Test
+        run: |
+          # Buraya projenin build komutlarını yazabilirsin (Örn: npm install && npm test)
+          echo "Building Project Tick..."
+          sleep 5 # Kaosun tadını çıkar
+
+      - name: Success Report
+        if: success()
+        run: |
+          curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=success&context=Shadow-Runner&description=All good in the shadow realm!"
+
+      - name: Failure Report
+        if: failure()
+        run: |
+          curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=failed&context=Shadow-Runner&description=Shadows have fallen!"
