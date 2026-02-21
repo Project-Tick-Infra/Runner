@@ -12,25 +12,16 @@ jobs:
   shadow-runner:
     runs-on: ubuntu-latest
     steps:
-      - name: "🔍 Validate Environment"
+      - name: "Status: Initializing Shadow Envoy"
         run: |
           if [ -z "${{ secrets.GL_BRIDGE_TOKEN }}" ]; then
-            echo "❌ ERROR: GL_BRIDGE_TOKEN is MISSING in GitHub Secrets!"
-            echo "Please go to Settings -> Secrets -> Actions and add GL_BRIDGE_TOKEN."
+            echo "::error::GL_BRIDGE_TOKEN is MISSING! Please add it to GitHub Secrets."
             exit 1
           fi
-          if [ -z "${{ github.event.inputs.gitlab_url }}" ]; then
-             echo "❌ ERROR: gitlab_url input is empty!"
-             exit 1
-          fi
-
-      - name: "Status: Initializing Shadow Connection"
-        run: |
-          # URL'i güvenli hale getirelim
-          API_PATH="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
-          # Context'teki boşluğu encoding yapıyoruz
+          # GitLab API URL'ini hazırlayalım
+          URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "$API_PATH?state=running&context=Shadow-Runner/Init"
+          "$URL?state=running&context=Shadow-Runner/Handshake"
 
       - name: Fetch Code
         run: |
@@ -42,23 +33,19 @@ jobs:
         run: |
           mkdir -p .github/workflows
           FILES=$(ls .github/workflows/*.{yml,yaml} 2>/dev/null || echo "")
-          FOUND_WF=""
+          FOUND=""
           
           for f in $FILES; do
-             # 'pull_request' tetikleyicisi kontrolü
-             IS_PR=$(yq e '.on' "$f" 2>/dev/null | grep -qi "pull_request" && echo "1" || echo "0")
-             
-             if [ "$IS_PR" == "1" ]; then
-                FILENAME=$(basename "$f")
-                echo "✅ Found PR Workflow: $FILENAME"
-                FOUND_WF="$FOUND_WF $FILENAME"
+             # Sadece içinde pull_request geçenleri alıyoruz (Daha basit ve sağlam kontrol)
+             if grep -qi "pull_request" "$f"; then
+                echo "✅ Native Workflow Detected: $f"
+                FOUND="$FOUND $(basename "$f")"
              fi
           done
           
-          CLEAN_FOUND=$(echo $FOUND_WF | xargs)
-          echo "selected_workflows=$CLEAN_FOUND" >> $GITHUB_OUTPUT
+          echo "selected_workflows=$(echo $FOUND | xargs)" >> $GITHUB_OUTPUT
 
-      - name: 🚀 Proxy Execution (Sequential)
+      - name: 🚀 Execute Proxy (The Hard Way)
         if: steps.filter.outputs.selected_workflows != ''
         shell: bash
         run: |
@@ -67,19 +54,18 @@ jobs:
           
           for WF in "${WORKFLOWS[@]}"; do
             WF_PATH=".github/workflows/$WF"
-            RAW_NAME=$(yq e '.name // "'$WF'"' "$WF_PATH")
+            WF_NAME=$(yq e '.name // "'$WF'"' "$WF_PATH")
             
-            # URL Encoding for Workflow Name (Bash ile Python yardımıyla)
-            ENC_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$RAW_NAME'''))")
+            # URL Encoding Fix (Daha güvenli yöntem)
+            ENC_NAME=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$WF_NAME")
             
-            echo "::group::🔄 Executing Proxy: $RAW_NAME"
+            echo "::group::🔄 Proxying Native Workflow: $WF_NAME"
             
-            # GitLab'a statü bas (Encoded Name ile)
-            API_URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
+            # GitLab Status: Running
             curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-            "$API_URL?state=running&context=Shadow-Runner/$ENC_NAME"
+            "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=running&context=Shadow-Runner/$ENC_NAME"
 
-            # 1. Env Variables
+            # 1. ENVs (Global & Job)
             eval $(yq e '.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
             eval $(yq e '.jobs.*.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
             
@@ -87,10 +73,11 @@ jobs:
             if [ -f "package.json" ]; then npm install; fi
             if [ -f "composer.json" ]; then composer install; fi
 
-            # 3. Steps Execution
+            # 3. Dynamic Step Execution (Real Eval)
+            # Workflow'un asıl komutlarını buradaki shell'e basıyoruz
             yq e '.jobs.*.steps[] | select(has("run")) | .run' "$WF_PATH" | while read -r cmd; do
               if [ "$cmd" != "null" ] && [ -n "$cmd" ]; then
-                echo "▶️ EXEC: $cmd"
+                echo "▶️ Running Native Step..."
                 eval "$cmd"
               fi
             done
@@ -98,15 +85,16 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Final Result
-        if: always()
+      - name: Final Success Report
+        if: success()
         run: |
-          STATE="success"
-          if [[ "${{ job.status }}" != "success" ]]; then STATE="failed"; fi
-          
-          # Boşlukları %20 yapıyoruz (Url Safe)
-          DESC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('Shadow Envoy finished with status: ${{ job.status }}'))")
-          
-          API_URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
+          DESC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('Shadow Envoy: All native steps completed.'))")
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "$API_URL?state=$STATE&context=Shadow-Runner/Final&description=$DESC"
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=success&context=Shadow-Runner/Final&description=$DESC"
+
+      - name: Final Failure Report
+        if: failure()
+        run: |
+          DESC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('Shadow Envoy: A native step has failed.'))")
+          curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=failed&context=Shadow-Runner/Final&description=$DESC"
