@@ -9,34 +9,107 @@ on:
       gitlab_url: { required: true }
 
 jobs:
-  build-and-report:
+  # 1. ADIM: Keşif (Discovery)
+  # Bu job hangi native workflow'ların çalışması gerektiğini bulur.
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_workflows: ${{ steps.set-matrix.outputs.has_workflows }}
     steps:
       - name: Notify GitLab (Running)
         run: |
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=running&context=Shadow-Runner"
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=running&context=Shadow-Runner/Discovery"
 
-      - name: Fetch Code from Private GitLab
+      - name: Fetch Project Structure
         run: |
-          # GitLab'dan kodu çekiyoruz (Token kullanarak)
+          git clone --depth 1 --branch ${{ github.event.inputs.branch }} \
+          https://oauth2:${{ secrets.GL_BRIDGE_TOKEN }}@git.projecttick.org/${{ github.event.inputs.project_full_name }}.git .
+
+      - id: set-matrix
+        name: � Parse Workflows for 'pull_request'
+        run: |
+          mkdir -p .github/workflows
+          FILES=$(ls .github/workflows/*.{yml,yaml} 2>/dev/null || echo "")
+          
+          MATRIX_ARRAY="[]"
+          
+          if [ -n "$FILES" ]; then
+            # yq kullanarak 'on' kısmında pull_request olanları buluyoruz
+            VALID_FILES=""
+            for f in $FILES; do
+              # Basit grep veya yq ile kontrol
+              if grep -qi "pull_request" "$f"; then
+                FILENAME=$(basename "$f")
+                VALID_FILES="$VALID_FILES\"$FILENAME\","
+              fi
+            done
+            
+            if [ -n "$VALID_FILES" ]; then
+                # Sondaki virgülü temizle ve array yap
+                MATRIX_ARRAY="[${VALID_FILES%?}]"
+            fi
+          fi
+          
+          echo "matrix=$MATRIX_ARRAY" >> $GITHUB_OUTPUT
+          
+          if [ "$MATRIX_ARRAY" != "[]" ]; then
+            echo "has_workflows=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_workflows=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Discovered matrix: $MATRIX_ARRAY"
+
+  # 2. ADIM: Paralel Eval (Execution)
+  # Keşfedilen her workflow dosyası için ayrı bir job ayağa kalkar.
+  execute:
+    needs: discover
+    if: needs.discover.outputs.has_workflows == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow_file: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Fetch Code
+        run: |
           git clone --branch ${{ github.event.inputs.branch }} \
           https://oauth2:${{ secrets.GL_BRIDGE_TOKEN }}@git.projecttick.org/${{ github.event.inputs.project_full_name }}.git .
 
-      - name: 🔨 Execute Build/Test
+      - name: 🔨 Eval Workflow: ${{ matrix.workflow_file }}
         run: |
-          # Buraya projenin build komutlarını yazabilirsin (Örn: npm install && npm test)
-          echo "Building Project Tick..."
-          sleep 5 # Kaosun tadını çıkar
+          echo "🎭 Executing Eval for ${{ matrix.workflow_file }}"
+          
+          # Bağımlılıkları hazırla
+          if [ -f "package.json" ]; then npm install; fi
+          if [ -f "composer.json" ]; then composer install; fi
+          
+          # Workflow içindeki 'run:' komutlarını ayıkla ve sırayla eval et
+          # Bu kısım çok kaotik: YAML'dan 'run' bloklarını çekip bash ile çalıştırır.
+          yq e '.jobs.*.steps[].run' ".github/workflows/${{ matrix.workflow_file }}" | while read -r cmd; do
+            if [ "$cmd" != "null" ]; then
+              echo "🚀 Executing step: $cmd"
+              eval "$cmd"
+            fi
+          done
 
-      - name: Success Report
-        if: success()
+  # 3. ADIM: Raporlama (Final Report)
+  report:
+    needs: [discover, execute]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Final GitLab Status
         run: |
+          STATE="success"
+          DESC="All shadow systems operational."
+          
+          if [[ "${{ needs.discover.result }}" == "failure" || "${{ needs.execute.result }}" == "failure" ]]; then
+            STATE="failed"
+            DESC="Shadow systems encountered critical errors."
+          fi
+          
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=success&context=Shadow-Runner&description=All good in the shadow realm!"
-
-      - name: Failure Report
-        if: failure()
-        run: |
-          curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=failed&context=Shadow-Runner&description=Shadows have fallen!"
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=$STATE&context=Shadow-Runner/Final&description=$DESC"
