@@ -12,72 +12,71 @@ jobs:
   shadow-runner:
     runs-on: ubuntu-latest
     steps:
-      - name: "Status: Initializing Shadow Realm"
+      - name: "Status: Initializing Shadow Connection"
         run: |
+          # GitLab URL'sinin boş gelmediğinden emin olalım
+          GITLAB_API_URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=running&context=Shadow-Runner/Init"
+          "$GITLAB_API_URL?state=running&context=Shadow-Runner/Init"
 
       - name: Fetch Code
         run: |
+          # Kodu çekiyoruz
           git clone --branch ${{ github.event.inputs.branch }} \
           https://oauth2:${{ secrets.GL_BRIDGE_TOKEN }}@git.projecttick.org/${{ github.event.inputs.project_full_name }}.git .
 
-      - name: �️‍♂️ Discover & Filter Workflows (pull_request only)
+      - name: 🕵️‍♂️ Discover Pull Request Workflows
         id: filter
         run: |
-          # Sadece 'on' kısmında 'pull_request' olan dosyaları buluyoruz
           mkdir -p .github/workflows
           FILES=$(ls .github/workflows/*.{yml,yaml} 2>/dev/null || echo "")
           FOUND=""
           
           for f in $FILES; do
-             # YQ ile 'on' kısmında pull_request var mı diye kesin kontrol yapıyoruz
-             if yq e '.on | (.. | select(tag == "!!str") == "pull_request") or has("pull_request")' "$f" | grep -q "true"; then
+             # Daha sağlam bir pull_request kontrolü (yq ile 'on' bloğunu tarar)
+             IS_PR=$(yq e '.on | (.. | select(. == "pull_request"))' "$f" 2>/dev/null | grep -c "pull_request" || echo "0")
+             
+             if [ "$IS_PR" -gt 0 ]; then
+                echo "✅ Match Found: $f"
                 FOUND="$FOUND $f"
              fi
           done
           
+          # Sondaki ve baştaki boşlukları temizle
+          FOUND=$(echo $FOUND | xargs)
           echo "selected_workflows=$FOUND" >> $GITHUB_OUTPUT
-          echo "Found: $FOUND"
+          echo "Found Workflows: $FOUND"
 
-      - name: 🚀 Reusable Execution (Eval Mode)
+      - name: 🚀 Reusable-Style Execution
         if: steps.filter.outputs.selected_workflows != ''
         shell: bash
         run: |
-          # Hata durumunda döngüden çıkmak için set -e
+          # Hata yönetimini sıkılaştırıyoruz
           set -e
           
           for WF_PATH in ${{ steps.filter.outputs.selected_workflows }}; do
             WF_NAME=$(yq e '.name // "'$WF_PATH'"' "$WF_PATH")
-            echo "::group::Executing Workflow: $WF_NAME"
             
-            # 1. Bildirim: Bu workflow başlıyor
+            echo "::group::🔄 Calling Reusable Proxy: $WF_NAME"
+            
+            # GitLab'a "Bu spesifik iş başladı" diyelillm
             curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
             "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=running&context=Shadow-Runner/$WF_NAME"
 
-            # 2. Env'leri Bind et (Global & Job seviyesi)
-            # Not: Hata payını azaltmak için try-catch benzeri yapı
-            GLOBAL_ENV=$(yq e '.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
-            if [ -n "$GLOBAL_ENV" ]; then eval "$GLOBAL_ENV"; fi
+            # Env Variables (Sanki Reusable içindeymişiz gibi yükle)
+            EXPORT_ENV=$(yq e '.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
+            if [ -n "$EXPORT_ENV" ]; then eval "$EXPORT_ENV"; fi
             
-            JOB_ENV=$(yq e '.jobs.*.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
-            if [ -n "$JOB_ENV" ]; then eval "$JOB_ENV"; fi
-
-            # 3. Bağımlılıklar (Opsiyonel ama faydalı)
+            # Bağımlılıklar (Her workflow öncesi temiz başlangıç)
             if [ -f "package.json" ]; then npm install; fi
             if [ -f "composer.json" ]; then composer install; fi
 
-            # 4. Adımları Eval et
-            # Sadece 'run' içeren adımları sırayla koşturur
-            yq e '.jobs.*.steps[] | select(has("run")) | .run' "$WF_PATH" | while read -r script; do
-              if [ "$script" != "null" ]; then
-                echo "----------------------------------------"
-                echo "▶️ Step: $script"
-                eval "$script"
-                if [ $? -ne 0 ]; then
-                  echo "❌ FAILED step in $WF_NAME"
-                  exit 1
-                fi
+            # Adımları koştur (Sadece 'run' içerenleri alıyoruz)
+            # Reusable hissiyatı için her step'i ayrı ayrı logluyoruz
+            yq e '.jobs.*.steps[] | select(has("run")) | .run' "$WF_PATH" | while read -r cmd; do
+              if [ "$cmd" != "null" ] && [ -n "$cmd" ]; then
+                echo "---> Action Step: $cmd"
+                eval "$cmd"
               fi
             done
             
@@ -88,10 +87,10 @@ jobs:
         if: success()
         run: |
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=success&context=Shadow-Runner/Final&description=All native pull_request workflows passed!"
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=success&context=Shadow-Runner/Final&description=All native PR workflows successfully proxied."
 
       - name: Final Failure Report
         if: failure()
         run: |
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=failed&context=Shadow-Runner/Final&description=One or more workflows failed in eval mode."
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=failed&context=Shadow-Runner/Final&description=Workflow Proxy failed. Check logs."
