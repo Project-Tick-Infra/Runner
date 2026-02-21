@@ -12,70 +12,79 @@ jobs:
   shadow-runner:
     runs-on: ubuntu-latest
     steps:
+      - name: "🔍 Validate Secrets"
+        run: |
+          if [ -z "${{ secrets.GL_BRIDGE_TOKEN }}" ]; then
+            echo "❌ ERROR: GL_BRIDGE_TOKEN is missing in GitHub Secrets!"
+            exit 1
+          fi
+
       - name: "Status: Initializing Shadow Connection"
         run: |
-          # GitLab URL'sinin boş gelmediğinden emin olalım
           GITLAB_API_URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
           "$GITLAB_API_URL?state=running&context=Shadow-Runner/Init"
 
       - name: Fetch Code
         run: |
-          # Kodu çekiyoruz
           git clone --branch ${{ github.event.inputs.branch }} \
           https://oauth2:${{ secrets.GL_BRIDGE_TOKEN }}@git.projecttick.org/${{ github.event.inputs.project_full_name }}.git .
 
-      - name: 🕵️‍♂️ Discover Pull Request Workflows
+      - name: 🕵️‍♂️ Discover PR Workflows
         id: filter
         run: |
           mkdir -p .github/workflows
           FILES=$(ls .github/workflows/*.{yml,yaml} 2>/dev/null || echo "")
-          FOUND=""
+          FOUND_WF=""
           
           for f in $FILES; do
-             # Daha sağlam bir pull_request kontrolü (yq ile 'on' bloğunu tarar)
-             IS_PR=$(yq e '.on | (.. | select(. == "pull_request"))' "$f" 2>/dev/null | grep -c "pull_request" || echo "0")
+             # Daha basit ve hata payı düşük bir kontrol:
+             # Dosyanın 'on' kısmında 'pull_request' geçiyor mu?
+             IS_PR=$(yq e '.on' "$f" 2>/dev/null | grep -qi "pull_request" && echo "1" || echo "0")
              
-             if [ "$IS_PR" -gt 0 ]; then
+             if [ "$IS_PR" == "1" ]; then
                 echo "✅ Match Found: $f"
-                FOUND="$FOUND $f"
+                FILENAME=$(basename "$f")
+                FOUND_WF="$FOUND_WF $FILENAME"
              fi
           done
           
-          # Sondaki ve baştaki boşlukları temizle
-          FOUND=$(echo $FOUND | xargs)
-          echo "selected_workflows=$FOUND" >> $GITHUB_OUTPUT
-          echo "Found Workflows: $FOUND"
+          CLEAN_FOUND=$(echo $FOUND_WF | xargs)
+          echo "selected_workflows=$CLEAN_FOUND" >> $GITHUB_OUTPUT
+          echo "Found: $CLEAN_FOUND"
 
-      - name: 🚀 Reusable-Style Execution
+      - name: 🚀 Proxy Execution (Sequential Reusable Style)
         if: steps.filter.outputs.selected_workflows != ''
         shell: bash
         run: |
-          # Hata yönetimini sıkılaştırıyoruz
           set -e
           
-          for WF_PATH in ${{ steps.filter.outputs.selected_workflows }}; do
-            WF_NAME=$(yq e '.name // "'$WF_PATH'"' "$WF_PATH")
+          # Boşlukla ayrılmış listeyi diziye çevir
+          WORKFLOWS=(${{ steps.filter.outputs.selected_workflows }})
+          
+          for WF in "${WORKFLOWS[@]}"; do
+            WF_PATH=".github/workflows/$WF"
+            WF_NAME=$(yq e '.name // "'$WF'"' "$WF_PATH")
             
-            echo "::group::🔄 Calling Reusable Proxy: $WF_NAME"
+            echo "::group::🔄 Executing Proxy: $WF_NAME"
             
-            # GitLab'a "Bu spesifik iş başladı" diyelillm
+            # GitLab'a statü bas
             curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
             "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=running&context=Shadow-Runner/$WF_NAME"
 
-            # Env Variables (Sanki Reusable içindeymişiz gibi yükle)
-            EXPORT_ENV=$(yq e '.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
-            if [ -n "$EXPORT_ENV" ]; then eval "$EXPORT_ENV"; fi
+            # 1. Env'leri Bind Et
+            EXPORT_CMD=$(yq e '.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
+            if [ -n "$EXPORT_CMD" ]; then eval "$EXPORT_CMD"; fi
             
-            # Bağımlılıklar (Her workflow öncesi temiz başlangıç)
+            # 2. Ortamı Hazırla
             if [ -f "package.json" ]; then npm install; fi
             if [ -f "composer.json" ]; then composer install; fi
 
-            # Adımları koştur (Sadece 'run' içerenleri alıyoruz)
-            # Reusable hissiyatı için her step'i ayrı ayrı logluyoruz
+            # 3. Native Adımları Koştur
             yq e '.jobs.*.steps[] | select(has("run")) | .run' "$WF_PATH" | while read -r cmd; do
               if [ "$cmd" != "null" ] && [ -n "$cmd" ]; then
-                echo "---> Action Step: $cmd"
+                echo "----------------------------------------"
+                echo "▶️ EXEC: $cmd"
                 eval "$cmd"
               fi
             done
@@ -83,14 +92,11 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Final Success Report
-        if: success()
+      - name: Final Result
+        if: always()
         run: |
+          STATE="success"
+          if [[ "${{ job.status }}" != "success" ]]; then STATE="failed"; fi
+          
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=success&context=Shadow-Runner/Final&description=All native PR workflows successfully proxied."
-
-      - name: Final Failure Report
-        if: failure()
-        run: |
-          curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=failed&context=Shadow-Runner/Final&description=Workflow Proxy failed. Check logs."
+          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=$STATE&context=Shadow-Runner/Final&description=Shadow Envoy finished."
