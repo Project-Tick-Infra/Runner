@@ -12,18 +12,25 @@ jobs:
   shadow-runner:
     runs-on: ubuntu-latest
     steps:
-      - name: "🔍 Validate Secrets"
+      - name: "🔍 Validate Environment"
         run: |
           if [ -z "${{ secrets.GL_BRIDGE_TOKEN }}" ]; then
-            echo "❌ ERROR: GL_BRIDGE_TOKEN is missing in GitHub Secrets!"
+            echo "❌ ERROR: GL_BRIDGE_TOKEN is MISSING in GitHub Secrets!"
+            echo "Please go to Settings -> Secrets -> Actions and add GL_BRIDGE_TOKEN."
             exit 1
+          fi
+          if [ -z "${{ github.event.inputs.gitlab_url }}" ]; then
+             echo "❌ ERROR: gitlab_url input is empty!"
+             exit 1
           fi
 
       - name: "Status: Initializing Shadow Connection"
         run: |
-          GITLAB_API_URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
+          # URL'i güvenli hale getirelim
+          API_PATH="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
+          # Context'teki boşluğu encoding yapıyoruz
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "$GITLAB_API_URL?state=running&context=Shadow-Runner/Init"
+          "$API_PATH?state=running&context=Shadow-Runner/Init"
 
       - name: Fetch Code
         run: |
@@ -38,52 +45,51 @@ jobs:
           FOUND_WF=""
           
           for f in $FILES; do
-             # Daha basit ve hata payı düşük bir kontrol:
-             # Dosyanın 'on' kısmında 'pull_request' geçiyor mu?
+             # 'pull_request' tetikleyicisi kontrolü
              IS_PR=$(yq e '.on' "$f" 2>/dev/null | grep -qi "pull_request" && echo "1" || echo "0")
              
              if [ "$IS_PR" == "1" ]; then
-                echo "✅ Match Found: $f"
                 FILENAME=$(basename "$f")
+                echo "✅ Found PR Workflow: $FILENAME"
                 FOUND_WF="$FOUND_WF $FILENAME"
              fi
           done
           
           CLEAN_FOUND=$(echo $FOUND_WF | xargs)
           echo "selected_workflows=$CLEAN_FOUND" >> $GITHUB_OUTPUT
-          echo "Found: $CLEAN_FOUND"
 
-      - name: 🚀 Proxy Execution (Sequential Reusable Style)
+      - name: 🚀 Proxy Execution (Sequential)
         if: steps.filter.outputs.selected_workflows != ''
         shell: bash
         run: |
           set -e
-          
-          # Boşlukla ayrılmış listeyi diziye çevir
           WORKFLOWS=(${{ steps.filter.outputs.selected_workflows }})
           
           for WF in "${WORKFLOWS[@]}"; do
             WF_PATH=".github/workflows/$WF"
-            WF_NAME=$(yq e '.name // "'$WF'"' "$WF_PATH")
+            RAW_NAME=$(yq e '.name // "'$WF'"' "$WF_PATH")
             
-            echo "::group::🔄 Executing Proxy: $WF_NAME"
+            # URL Encoding for Workflow Name (Bash ile Python yardımıyla)
+            ENC_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$RAW_NAME'''))")
             
-            # GitLab'a statü bas
+            echo "::group::🔄 Executing Proxy: $RAW_NAME"
+            
+            # GitLab'a statü bas (Encoded Name ile)
+            API_URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
             curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-            "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=running&context=Shadow-Runner/$WF_NAME"
+            "$API_URL?state=running&context=Shadow-Runner/$ENC_NAME"
 
-            # 1. Env'leri Bind Et
-            EXPORT_CMD=$(yq e '.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
-            if [ -n "$EXPORT_CMD" ]; then eval "$EXPORT_CMD"; fi
+            # 1. Env Variables
+            eval $(yq e '.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
+            eval $(yq e '.jobs.*.env | to_entries | .[] | "export " + .key + "=\"" + .value + "\""' "$WF_PATH" 2>/dev/null || true)
             
-            # 2. Ortamı Hazırla
+            # 2. Dependencies
             if [ -f "package.json" ]; then npm install; fi
             if [ -f "composer.json" ]; then composer install; fi
 
-            # 3. Native Adımları Koştur
+            # 3. Steps Execution
             yq e '.jobs.*.steps[] | select(has("run")) | .run' "$WF_PATH" | while read -r cmd; do
               if [ "$cmd" != "null" ] && [ -n "$cmd" ]; then
-                echo "----------------------------------------"
                 echo "▶️ EXEC: $cmd"
                 eval "$cmd"
               fi
@@ -98,5 +104,9 @@ jobs:
           STATE="success"
           if [[ "${{ job.status }}" != "success" ]]; then STATE="failed"; fi
           
+          # Boşlukları %20 yapıyoruz (Url Safe)
+          DESC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('Shadow Envoy finished with status: ${{ job.status }}'))")
+          
+          API_URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
-          "${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}?state=$STATE&context=Shadow-Runner/Final&description=Shadow Envoy finished."
+          "$API_URL?state=$STATE&context=Shadow-Runner/Final&description=$DESC"
