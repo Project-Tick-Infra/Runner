@@ -16,10 +16,11 @@ jobs:
   relay:
     runs-on: ubuntu-latest
     steps:
-      - name: "🔍 Validate Token"
+      - name: "🔍 Validate Secrets"
         run: |
-          if [ -z "${{ secrets.GL_BRIDGE_TOKEN }}" ]; then
-            echo "❌ ERROR: GL_BRIDGE_TOKEN is MISSING! Add it to GitHub Secrets."
+          if [ -z "${{ secrets.GH_BRIDGE_TOKEN }}" ]; then
+            echo "❌ ERROR: GH_BRIDGE_TOKEN is MISSING in GitHub Secrets!"
+            echo "You MUST add your GitHub PAT to Secrets with 'workflow' scope."
             exit 1
           fi
 
@@ -29,27 +30,29 @@ jobs:
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
           "$URL?state=running&context=Shadow-Runner/Relay"
 
-      - name: Fetch Code
+      - name: Fetch Code from GitLab
         run: |
-          # Kodu GitLab'dan çek
           git clone --branch ${{ github.event.inputs.branch }} \
           https://oauth2:${{ secrets.GL_BRIDGE_TOKEN }}@git.projecttick.org/${{ github.event.inputs.project_full_name }}.git .
 
-      - name: 🚀 Push to Shadow Mirror Branch
+      - name: 🚀 Push to Shadow Mirror (using PAT)
         run: |
           git config user.name "Shadow Runner"
           git config user.email "runner@projecttick.org"
           
-          # Geçici bir branch adı oluştur (Shadow/SHA)
+          # Branch adını belirle
           BRANCH_NAME="shadow/${{ github.event.inputs.project_id }}/${{ github.event.inputs.sha }}"
           
-          # GitHub reposuna uzaktan bağlan ve pushla
-          git remote add shadow https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git push -f shadow HEAD:refs/heads/$BRANCH_NAME
+          # BURASI KRİTİK: GITHUB_TOKEN yerine senin GH_BRIDGE_TOKEN pat'ini kullanıyoruz!
+          # Böylece .github/workflows dosyalarını pushlamamıza izin verecek.
+          git remote add shadow-origin https://x-access-token:${{ secrets.GH_BRIDGE_TOKEN }}@github.com/${{ github.repository }}.git
           
-          echo "✅ Code pushed to branch $BRANCH_NAME. Native workflows will trigger!"
+          git push -f shadow-origin HEAD:refs/heads/$BRANCH_NAME
+          
+          echo "✅ Code pushed to $BRANCH_NAME. Native CI will trigger now!"
 
       - name: Final Success Report
+        if: success()
         run: |
           URL="${{ github.event.inputs.gitlab_url }}/api/v4/projects/${{ github.event.inputs.project_id }}/statuses/${{ github.event.inputs.sha }}"
           curl --request POST --header "PRIVATE-TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}" \
