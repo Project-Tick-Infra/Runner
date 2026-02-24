@@ -70,6 +70,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 1
+          token: ${{ secrets.GH_BRIDGE_TOKEN }}
 
       - name: "⬇️ Download Full Source from Bridge Server"
         run: |
