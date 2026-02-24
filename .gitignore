@@ -1,0 +1,12 @@
+node_modules/
+
+dist
+
+.env
+.env.local
+.direnv
+.pre-commit-config.yaml
+
+eslint_report.json
+
+.DS_Store
