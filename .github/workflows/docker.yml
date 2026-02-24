@@ -1,0 +1,115 @@
+name: Docker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build image
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v20
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v13
+
+      - name: Build Docker image
+        id: build
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          nix build --print-build-logs .#container-"$ARCH"
+          [ ! -L result ] && exit 1
+          echo "path=$(readlink -f result)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload image
+        uses: actions/upload-artifact@v5
+        with:
+          name: container-${{ matrix.arch }}
+          path: ${{ steps.build.outputs.path }}
+          if-no-files-found: error
+          retention-days: 3
+
+  # Make sure all above jobs finished successfully
+  release-gate:
+    name: Docker Release gate
+    needs: [build]
+
+    if: ${{ always() }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Exit with error
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: exit 1
+
+  push:
+    name: Push image
+    needs: build
+
+    if: ${{ github.event_name == 'push' }}
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+
+    env:
+      REGISTRY: ghcr.io
+      USERNAME: ${{ github.actor }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Determine image name
+        run: |
+          echo "IMAGE_NAME=${REPOSITORY,,}" >> "$GITHUB_ENV"
+        env:
+          REPOSITORY: ${{ github.repository }}
+
+      - name: Download images
+        uses: actions/download-artifact@v6
+        with:
+          path: images
+
+      - name: Login to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USERNAME }}
+          password: ${{ github.token }}
+
+      - name: Push to registry
+        env:
+          TAG: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: |
+          set -eu
+
+          architectures=("amd64" "arm64")
+          for arch in "${architectures[@]}"; do
+            docker load < images/container-"$arch"/*.tar.gz
+            docker tag refraction:latest-"$arch" "$TAG"-"$arch"
+            docker push "$TAG"-"$arch"
+          done
+
+          docker manifest create "$TAG" \
+            --amend "$TAG"-amd64 \
+            --amend "$TAG"-arm64
+
+          docker manifest push "$TAG"
