@@ -1,0 +1,79 @@
+import type { RangeStrategy } from '../../../types/index.ts';
+import { DistroInfo } from '../distro.ts';
+import type { GenericVersion } from '../generic.ts';
+import { GenericVersioningApi } from '../generic.ts';
+import type { NewValueConfig, VersioningApi } from '../types.ts';
+import { RollingReleasesData } from './common.ts';
+
+export const id = 'debian';
+export const displayName = 'Debian';
+export const urls = [
+  'https://debian.pages.debian.net/distro-info-data/debian.csv',
+];
+export const supportsRanges = true;
+export const supportedRangeStrategies: RangeStrategy[] = ['replace'];
+
+export class DebianVersioningApi extends GenericVersioningApi {
+  private readonly _distroInfo: DistroInfo;
+  private readonly _rollingReleases: RollingReleasesData;
+
+  constructor() {
+    super();
+    this._distroInfo = new DistroInfo('data/debian-distro-info.json');
+    this._rollingReleases = new RollingReleasesData(this._distroInfo);
+  }
+
+  override isValid(version: string): boolean {
+    const isValid = super.isValid(version);
+    let ver: string;
+    ver = this._rollingReleases.getVersionByLts(version);
+    ver = this._distroInfo.getVersionByCodename(ver);
+    return isValid && this._distroInfo.isCreated(ver);
+  }
+
+  override isStable(version: string): boolean {
+    let ver: string;
+    ver = this._rollingReleases.getVersionByLts(version);
+    ver = this._distroInfo.getVersionByCodename(ver);
+    return this._distroInfo.isReleased(ver) && !this._distroInfo.isEolLts(ver);
+  }
+
+  override getNewValue({ currentValue, newVersion }: NewValueConfig): string {
+    // current value is [oldold|old|]stable
+    if (this._rollingReleases.has(currentValue)) {
+      return this._rollingReleases.getLtsByVersion(newVersion);
+    }
+
+    if (this._distroInfo.isCodename(currentValue)) {
+      const di = this._rollingReleases.schedule(newVersion);
+      let ver = newVersion;
+      if (di) {
+        ver = di.version;
+      }
+      return this._distroInfo.getCodenameByVersion(ver);
+    }
+
+    // newVersion is [oldold|old|]stable
+    // current value is numeric
+    if (this._rollingReleases.has(newVersion)) {
+      // should never `undefined` if it exists
+      return this._rollingReleases.schedule(newVersion)!.version;
+    }
+
+    return this._distroInfo.getVersionByCodename(newVersion);
+  }
+
+  protected override _parse(version: string): GenericVersion | null {
+    let ver: string;
+    ver = this._rollingReleases.getVersionByLts(version);
+    ver = this._distroInfo.getVersionByCodename(ver);
+    if (!this._distroInfo.exists(ver)) {
+      return null;
+    }
+    return { release: ver.split('.').map(Number) };
+  }
+}
+
+export const api: VersioningApi = new DebianVersioningApi();
+
+export default api;
