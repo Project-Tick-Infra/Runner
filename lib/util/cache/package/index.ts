@@ -1,0 +1,118 @@
+import type { AllConfig } from '../../../config/types.ts';
+import { getEnv } from '../../env.ts';
+import { PackageCacheStats } from '../../stats.ts';
+import * as memCache from '../memory/index.ts';
+import * as fileCache from './file.ts';
+import { getCombinedKey } from './key.ts';
+import * as redisCache from './redis.ts';
+import { SqlitePackageCache } from './sqlite.ts';
+import { getTtlOverride } from './ttl.ts';
+import type { PackageCache, PackageCacheNamespace } from './types.ts';
+
+let cacheProxy: PackageCache | undefined;
+
+let cacheType: 'redis' | 'sqlite' | 'memory' | 'file' | undefined;
+
+/* v8 ignore next -- not important */
+export function getCacheType(): typeof cacheType {
+  return cacheType;
+}
+
+export async function get<T = any>(
+  namespace: PackageCacheNamespace,
+  key: string,
+): Promise<T | undefined> {
+  if (!cacheProxy) {
+    return undefined;
+  }
+
+  const combinedKey = getCombinedKey(namespace, key);
+  let p = memCache.get(combinedKey);
+  if (!p) {
+    p = PackageCacheStats.wrapGet(() =>
+      cacheProxy!.get<number[]>(namespace, key),
+    );
+    memCache.set(combinedKey, p);
+  }
+
+  const result = await p;
+  return result;
+}
+
+/**
+ * Set cache value with user-defined TTL overrides.
+ */
+export async function set(
+  namespace: PackageCacheNamespace,
+  key: string,
+  value: unknown,
+  hardTtlMinutes: number,
+): Promise<void> {
+  const rawTtl = getTtlOverride(namespace) ?? hardTtlMinutes;
+  await setWithRawTtl(namespace, key, value, rawTtl);
+}
+
+/**
+ * Set cache value ignoring user-defined TTL overrides.
+ * This MUST NOT be used outside of cache implementation
+ */
+export async function setWithRawTtl(
+  namespace: PackageCacheNamespace,
+  key: string,
+  value: unknown,
+  hardTtlMinutes: number,
+): Promise<void> {
+  if (!cacheProxy) {
+    return;
+  }
+
+  await PackageCacheStats.wrapSet(() =>
+    cacheProxy!.set(namespace, key, value, hardTtlMinutes),
+  );
+
+  const combinedKey = getCombinedKey(namespace, key);
+  const p = Promise.resolve(value);
+  memCache.set(combinedKey, p);
+}
+
+export async function init(config: AllConfig): Promise<void> {
+  cacheType = undefined;
+
+  if (config.redisUrl) {
+    await redisCache.init(config.redisUrl, config.redisPrefix);
+    cacheProxy = {
+      get: redisCache.get,
+      set: redisCache.set,
+    };
+    cacheType = 'redis';
+    return;
+  }
+
+  if (getEnv().RENOVATE_X_SQLITE_PACKAGE_CACHE) {
+    cacheProxy = await SqlitePackageCache.init(config.cacheDir!);
+    cacheType = 'sqlite';
+    return;
+  }
+
+  // v8 ignore else -- TODO: add test #40625
+  if (config.cacheDir) {
+    fileCache.init(config.cacheDir);
+    cacheProxy = {
+      get: fileCache.get,
+      set: fileCache.set,
+      cleanup: fileCache.cleanup,
+    };
+    cacheType = 'file';
+    return;
+  }
+}
+
+export async function cleanup(config: AllConfig): Promise<void> {
+  cacheType = undefined;
+  if (config?.redisUrl) {
+    await redisCache.end();
+  }
+  if (cacheProxy?.cleanup) {
+    await cacheProxy.cleanup();
+  }
+}
