@@ -129,7 +129,14 @@ jobs:
           
           echo "branch=$EVAL_BRANCH" >> $GITHUB_OUTPUT
 
-      - name: "📊 Evaluation Summary"
+      - name: "� Push Eval Branch"
+        run: |
+          EVAL_BRANCH="${{ steps.apply_patch.outputs.branch }}"
+          echo "🚀 Pushing eval branch: $EVAL_BRANCH"
+          git push -f origin "$EVAL_BRANCH"
+          echo "✅ Branch pushed. Repo CI workflows will now trigger on this branch."
+
+      - name: "�📊 Evaluation Summary"
         run: |
           echo "╔══════════════════════════════════════════╗"
           echo "║  Evaluation Result                        ║"
@@ -138,6 +145,7 @@ jobs:
           echo "║ MR:       !${{ inputs.gitlab_mr_iid }}"
           echo "║ Apply:    ${{ steps.apply_patch.outputs.status }}"
           echo "║ Branch:   ${{ steps.apply_patch.outputs.branch }}"
+          echo "║ Push:     ✅"
           echo "╚══════════════════════════════════════════╝"
 
       # ─── Add your CI steps here ───
