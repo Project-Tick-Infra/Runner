@@ -1,0 +1,107 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Project Tick
+# SPDX-FileContributor: Project Tick
+
+# Copyright (c) 2026 Project Tick
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+    github_bot_always_reviewers: '%env(default::GITHUB_BOT_ALWAYS_REVIEWERS)%'
+    github_bot_auto_merge_enabled: '%env(default::GITHUB_BOT_AUTO_MERGE_ENABLED)%'
+    github_bot_allowed_associations: '%env(default::GITHUB_BOT_ALLOWED_ASSOCIATIONS)%'
+    github_bot_comment_on_command: '%env(default::GITHUB_BOT_COMMENT_ON_COMMAND)%'
+    github_bot_approve_on_green: '%env(default::GITHUB_BOT_APPROVE_ON_GREEN)%'
+    github_bot_merge_method: '%env(default::GITHUB_BOT_MERGE_METHOD)%'
+    github_bot_allow_merge_command_skip_ci: '%env(default::GITHUB_BOT_ALLOW_MERGE_COMMAND_SKIP_CI)%'
+    github_token: '%env(default::GITHUB_TOKEN)%'
+    github_tokens: '%env(default::GITHUB_TOKENS)%'
+    gitlab_webhook_secret: '%env(default::GITLAB_WEBHOOK_SECRET)%'
+    cla_log_path: '%kernel.project_dir%/var/log/cla-check.log'
+    bot_log_path: '%kernel.project_dir%/var/log/monitor.log'
+    license_secret: '%env(default::PROJT_LICENSE_SECRET)%'
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+    # makes classes in src/ available to be used as services
+    # this creates a service per class whose id is the fully-qualified class name
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Module\Cla\ClaCheckService:
+        arguments:
+            $appId: '%env(GITHUB_APP_ID)%'
+            $privateKey: '%env(GITHUB_PRIVATE_KEY)%'
+            $patToken: '%env(GITHUB_TOKEN)%'
+            $gitlabToken: '%env(GL_BRIDGE_TOKEN)%'
+
+    App\Controller\GithubWebhookController:
+        arguments:
+            $webhookSecret: '%env(default::GITHUB_WEBHOOK_SECRET)%'
+            $botService: '@App\Module\GithubBot\GithubBotService'
+
+    App\Controller\GitlabWebhookController:
+        arguments:
+            $webhookSecret: '%gitlab_webhook_secret%'
+            $claService: '@App\Module\Cla\ClaCheckService'
+
+    App\Module\Monitor\UptimeService: ~
+
+    App\Service\GithubTokenBalancer:
+        arguments:
+            $appId: '%env(GITHUB_APP_ID)%'
+            $privateKey: '%env(GITHUB_PRIVATE_KEY)%'
+            $tokensList: '%github_tokens%'
+
+    App\Module\GitlabBridge\GitlabBridgeService:
+        arguments:
+            $githubToken: '%env(GH_BRIDGE_TOKEN)%'
+            $gitlabToken: '%env(GL_BRIDGE_TOKEN)%'
+
+    App\Controller\GitlabBridgeController:
+        arguments:
+            $bridgeService: '@App\Module\GitlabBridge\GitlabBridgeService'
+
+    App\Command\GitlabShadowObserverCommand:
+        arguments:
+            $bridgeService: '@App\Module\GitlabBridge\GitlabBridgeService'
+
+    App\Service\ModuleService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Controller\Admin\LicenseKeysGenController:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    Twig\Extension\StringLoaderExtension: ~
+

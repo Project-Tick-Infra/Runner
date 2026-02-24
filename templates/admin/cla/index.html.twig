@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}CLA Signatures - Admin{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="h3 mb-3">CLA Signatures</h1>
+            <div class="card">
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Signer Name</th>
+                                <th>Identity (GH/GL)</th>
+                                <th>Version</th>
+                                <th>Signed At</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for signature in signatures %}
+                                <tr>
+                                    <td>{{ signature.signerName|default(signature.user.email) }}</td>
+                                    <td>
+                                        <div style="font-size: 0.9rem;"><strong>GH:</strong> @{{ signature.githubUsername }}</div>
+                                        <div style="font-size: 0.9rem;"><strong>GL:</strong> {{ signature.gitlabUsername ? '@' ~ signature.gitlabUsername : '<span class="text-muted">N/A</span>'|raw }}</div>
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ signature.version }}</span></td>
+                                    <td>{{ signature.signedAt|date('d M Y, H:i') }}</td>
+                                    <td>
+                                        {% if signature.isVerified %}
+                                            <span class="badge bg-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ path('app_admin_cla_view', {id: signature.id}) }}" class="btn btn-sm btn-info text-white">View & Archive</a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No signatures found.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

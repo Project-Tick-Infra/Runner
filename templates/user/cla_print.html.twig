@@ -1,0 +1,123 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}CLA Document - {{ signature.signerName }}{% endblock %}
+
+{% block body %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<div class="container py-5">
+    <div class="mb-4 d-print-none" style="display: flex; gap: 10px;">
+        <a href="{{ path('app_user_licenses') }}" class="btn btn-secondary">&laquo; Back to My Licenses</a>
+        <a href="{{ path('app_user_cla_print', {id: signature.id}) }}" class="btn btn-success" style="padding: 10px 24px; font-weight: bold;">
+            <i class="fas fa-file-pdf"></i> Download Official PDF
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-primary" style="padding: 10px 24px;">
+            <i class="fas fa-print"></i> Print (Snapshot)
+        </button>
+    </div>
+
+    <div id="cla-document">
+        <div class="doc-header">
+            <h1 class="doc-title" style="color: #000 !important;">Contributor License Agreement</h1>
+            <div class="doc-meta" style="color: #000 !important; margin-top: 15px;">
+                <p style="margin: 2px 0; color: #000 !important; opacity: 1 !important;"><strong>CLA_VERSION:</strong> {{ signature.version }}</p>
+                <p style="margin: 2px 0; color: #000 !important; opacity: 1 !important; word-break: break-all;"><strong>DOC_SOURCE_SHA256:</strong> {{ doc_sha }}</p>
+                <p style="margin: 2px 0; font-size: 8pt; color: #000 !important; opacity: 1 !important;">Immutable content hash of the agreement terms.</p>
+            </div>
+        </div>
+
+        <div class="doc-content" style="color: #000 !important;">
+            {{ license.content|nl2br }}
+        </div>
+
+        <div class="doc-footer">
+            <table class="sig-table">
+                <tr>
+                    <td class="sig-col-left">
+                        <p class="sig-label" style="color: #000 !important; opacity: 1 !important;">SIGNER_LEGAL_NAME</p>
+                        <p class="sig-value-name" style="color: #000 !important;">{{ signature.signerName }}</p>
+                        
+                        <p class="sig-label" style="color: #000 !important; opacity: 1 !important;">GITHUB_IDENTITY</p>
+                        <p style="margin: 5px 0; font-size: 11pt; color: #000 !important;">
+                            <strong>USERNAME:</strong> {{ signature.githubUsername }}<br>
+                            <strong>NUMERIC_ID:</strong> {{ signature.githubNumericId|default('N/A') }}<br>
+                            <strong>EMAIL_HASH:</strong> <span style="word-break: break-all;">{{ signature.emailHash|default('N/A') }}</span>
+                        </p>
+                    </td>
+                    <td class="sig-col-right">
+                        <p class="sig-label" style="color: #000 !important; opacity: 1 !important;">DIGITAL_SIGNATURE_SEAL</p>
+                        <div class="sig-image-box" style="border: 1px solid #000 !important; padding: 5px; margin-top: 5px; background: #fff !important; max-width: 260px; margin-left: auto;">
+                            <img src="{{ signature.signatureImage }}" crossorigin="anonymous" style="width: 100% !important; max-width: 250px !important; height: auto !important; display: block; border: none !important;">
+                        </div>
+                        <p class="sig-date" style="color: #000 !important; font-size: 8pt; margin-top: 5px;">
+                            DATE_OF_BINDING: {{ signature.verifiedAt|date('Y-m-d H:i:s T') }}
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="oath-box" style="color: #000 !important; border: 1px solid #000 !important; padding: 15px; margin-top: 30px; background: #fff !important; font-family: monospace; font-size: 10pt;">
+                <strong style="color: #000 !important;">OATH_OF_COMPACT:</strong><br>
+                <span style="color: #000 !important;">"I, {{ signature.signerName|upper }}, HEREBY ASSIGN AND TRANSFER ALL RIGHT, TITLE, AND INTEREST IN AND TO MY CONTRIBUTIONS UNDER PROJECT TICK CLA {{ signature.version }}"</span>
+            </div>
+        </div>
+
+        <div class="final-footer" style="color: #000 !important; text-align: left; border-top: 1px solid #000; padding-top: 20px; margin-top: 40px;">
+            <div style="display: flex; justify-content: space-between; gap: 20px; font-size: 8pt; font-family: monospace; line-height: 1.3;">
+                <div style="flex: 1; min-width: 0;">
+                    <strong>PROVENANCE_METADATA:</strong><br>
+                    IP_ADDRESS: {{ signature.ipAddress|default('HIDDEN') }}<br>
+                    <span style="word-break: break-all;">USER_AGENT: {{ signature.userAgent|default('HIDDEN') }}</span><br>
+                    NONCE_ID: {{ signature.nonce|default('LEGACY_SIG') }}
+                </div>
+                <div style="flex: 1; min-width: 0; text-align: right; word-break: break-all;">
+                    <strong>CANONICAL_SIGNATURE_HASH (SHA256):</strong><br>
+                    <span style="word-break: break-all; display: inline-block; width: 100%;">{{ signature.sha }}</span><br>
+                    <span style="font-size: 7pt; color: #000 !important; opacity: 1 !important;">Format: DocSha|Name|GitHubId|EmailHash|SigImageHash|Timestamp|IP|UA|Nonce</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding: 10px; border: 1px dashed #000; font-family: monospace; font-size: 8pt; word-break: break-all; color: #000 !important;">
+                <strong>SERVER_VERIFIED_ED25519_SEAL:</strong><br>
+                {{ signature.serverSignature|default('LEGACY_SIG_NO_SEAL') }}
+            </div>
+
+            <p style="margin-top: 20px; text-align: center; font-size: 9pt; color: #000 !important; opacity: 1 !important;">
+                This document was digitally executed and verified under the jurisdiction of Project Tick Ecosystem.
+            </p>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    #cla-document {
+        background: white !important;
+        padding: 50px;
+        border: 1px solid #000;
+        max-width: 800px;
+        margin: 0 auto;
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        line-height: 1.5;
+        color: #000 !important;
+    }
+    #cla-document * { color: #000 !important; }
+    .doc-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+    .doc-title { margin: 0; font-size: 20pt; text-transform: uppercase; font-weight: bold; }
+    .doc-meta { font-size: 10pt; }
+    .doc-content { margin-bottom: 30px; white-space: pre-wrap; text-align: left; font-size: 11pt; }
+    .sig-table { width: 100%; border-collapse: collapse; }
+    .sig-col-left { width: 55%; vertical-align: top; }
+    .sig-col-right { width: 45%; vertical-align: top; text-align: right; }
+    .sig-label { margin: 0; font-weight: bold; font-size: 8pt; text-transform: uppercase; color: #000 !important; opacity: 1 !important; }
+    .sig-value-name { font-size: 14pt; margin: 5px 0; font-weight: bold; }
+    
+    @media print {
+        header, footer, nav, .d-print-none, .navbar, .sidebar, .breadcrumb { display: none !important; }
+        body, html { background: #fff !important; margin: 0 !important; padding: 0 !important; }
+        .container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        #cla-document { border: none !important; padding: 10mm !important; max-width: 100% !important; width: 100% !important; }
+    }
+</style>
+{% endblock %}

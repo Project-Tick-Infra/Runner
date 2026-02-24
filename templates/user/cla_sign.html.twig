@@ -1,0 +1,263 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}The Ritual - {{ license.name }}{% endblock %}
+
+{% block body %}
+<style>
+    .ritual-container {
+        max-width: 900px;
+        margin: 60px auto;
+        background: #0d1117;
+        color: #c9d1d9;
+        padding: 40px;
+        border-radius: 12px;
+        border: 1px solid #30363d;
+        box-shadow: 0 0 40px rgba(0,0,0,0.5);
+    }
+    .scroll-box {
+        background: #161b22;
+        border: 1px solid #30363d;
+        padding: 24px;
+        border-radius: 8px;
+        max-height: 400px;
+        overflow-y: auto;
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 24px 0;
+        color: #8b949e;
+        white-space: pre-wrap;
+    }
+    .sha-badge {
+        display: inline-block;
+        background: #21262d;
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: 1px solid #30363d;
+        font-family: monospace;
+        color: #58a6ff;
+        margin-bottom: 24px;
+        word-break: break-all;
+    }
+    .ritual-step {
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 1px dashed #30363d;
+    }
+    .signature-pad-container {
+        background: #f8f9fa;
+        border: 2px solid #30363d;
+        border-radius: 8px;
+        margin: 16px 0;
+        overflow: hidden;
+        cursor: crosshair;
+    }
+    canvas {
+        display: block;
+        width: 100%;
+        height: 200px;
+        filter: invert(0); /* Ensure ink is black on light background */
+    }
+    .input-field {
+        width: 100%;
+        background: #0d1117;
+        border: 1px solid #30363d;
+        color: #f0f6fc;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 8px;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .input-field:focus {
+        border-color: #58a6ff;
+        outline: none;
+    }
+    .label {
+        font-weight: 600;
+        font-size: 14px;
+        color: #8b949e;
+        display: block;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+    .btn-ritual {
+        background: #238636;
+        color: #ffffff;
+        border: 1px solid rgba(240, 246, 252, 0.1);
+        padding: 16px 40px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 30px;
+        transition: transform 0.2s, background 0.2s;
+    }
+    .btn-ritual:hover {
+        background: #2ea043;
+        transform: translateY(-2px);
+    }
+    .oath-preview {
+        background: #21262d;
+        padding: 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #58a6ff;
+        margin-bottom: 10px;
+        font-family: monospace;
+    }
+    .signed-badge {
+        background: rgba(40, 167, 69, 0.1);
+        border: 1px solid #28a745;
+        color: #28a745;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-weight: bold;
+        text-align: center;
+    }
+</style>
+
+<div class="ritual-container">
+    <h1 style="color: #f0f6fc; margin-bottom: 8px;">The Contributor Ritual</h1>
+    <p style="color: #8b949e;">Binding legal identity to the Project Tick Ecosystem.</p>
+
+    {% if already_signed %}
+        <div class="signed-badge">
+            ✓ YOU HAVE ALREADY EXECUTED THIS COMPACT.
+        </div>
+    {% endif %}
+
+    <div class="scroll-box">
+        {{ license.content|nl2br }}
+    </div>
+
+    {% if not already_signed %}
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;">
+            <div class="sha-badge">
+                DOCUMENT_SHA: <span style="letter-spacing: 0.5px; color: #8b949e;">{{ doc_sha }}</span>
+            </div>
+            <div class="sha-badge">
+                IDENTITY_LINKS: <span style="letter-spacing: 0.5px; color: #8b949e;">GH:{{ github_id }} | GL:{{ gitlab_id }}</span>
+            </div>
+            <div class="sha-badge" style="border-color: #58a6ff;">
+                PERSONAL_RITUAL_SHA: <span style="letter-spacing: 1px;">{{ sha }}</span>
+            </div>
+        </div>
+
+        <form id="ritual-form" action="{{ path('app_user_cla_sign', {'slug': license.slug}) }}" method="POST">
+            <input type="hidden" name="_token" value="{{ csrf_token('sign_cla') }}">
+            <input type="hidden" name="signature_image" id="signature_image">
+
+            <div class="ritual-step">
+                <label class="label">1. Legal Identity</label>
+                <p style="font-size: 13px; color: #8b949e; margin-bottom: 12px;">Enter your full legal name as it should appear on the document.</p>
+                <input type="text" name="signer_name" id="signer_name" class="input-field" placeholder="Firstname Lastname" required oninput="updateOath()">
+            </div>
+
+            <div class="ritual-step">
+                <label class="label">2. Handwritten Seal</label>
+                <p style="font-size: 13px; color: #8b949e; margin-bottom: 12px;">Draw your personal signature in the box below.</p>
+                <div class="signature-pad-container">
+                    <canvas id="signature-pad"></canvas>
+                </div>
+                <button type="button" onclick="clearPad()" style="background: none; border: none; color: #58a6ff; cursor: pointer; font-size: 12px;">Clear signature</button>
+            </div>
+
+            <div class="ritual-step">
+                <label class="label">3. SHA Verification</label>
+                <p style="font-size: 13px; color: #8b949e;">Enter the <strong>LAST 6 CHARACTERS</strong> of the <strong style="color: #58a6ff;">PERSONAL_RITUAL_SHA</strong> displayed above.</p>
+                <input type="text" name="sha_verify" maxlength="6" class="input-field" placeholder="e.g. 5f3d1b" required>
+            </div>
+
+            <div class="ritual-step">
+                <label class="label">4. The Oath</label>
+                <p style="font-size: 13px; color: #8b949e;">Type the following phrase exactly to confirm your binding agreement.</p>
+                <div class="oath-preview" id="oath-text" style="font-size: 11px; line-height: 1.4;">{{ agreement_template|replace({'[NAME]': '[NAME]', '[SLUG]': license.slug}) }}</div>
+                <textarea name="agreement_text" class="input-field" rows="3" placeholder="Type the oath exactly..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-ritual">EXECUTE COMPACT</button>
+        </form>
+    {% else %}
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ path('app_user_licenses') }}" class="btn btn-secondary">Return to My Licenses</a>
+        </div>
+    {% endif %}
+</div>
+
+{% if not already_signed %}
+<script>
+    const canvas = document.getElementById('signature-pad');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+
+    function resizeCanvas() {
+        const ratio = 2; 
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        ctx.scale(ratio, ratio);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000000';
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function startPosition(e) {
+        drawing = true;
+        draw(e);
+    }
+
+    function finishedPosition() {
+        drawing = false;
+        ctx.beginPath();
+        document.getElementById('signature_image').value = canvas.toDataURL();
+    }
+
+    function draw(e) {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        ctx.lineCap = 'round';
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    }
+
+    canvas.addEventListener('mousedown', startPosition);
+    canvas.addEventListener('mouseup', finishedPosition);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e); });
+    canvas.addEventListener('touchend', (e) => { e.preventDefault(); finishedPosition(); });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+
+    function clearPad() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('signature_image').value = '';
+    }
+
+    function updateOath() {
+        const name = document.getElementById('signer_name').value || '[NAME]';
+        const slug = '{{ license.slug }}'.toUpperCase();
+        let template = `{{ agreement_template|raw }}`;
+        template = template.replace('[NAME]', name.toUpperCase().trim());
+        template = template.replace('[SLUG]', slug);
+        document.getElementById('oath-text').innerText = template;
+    }
+
+    document.getElementById('ritual-form').onsubmit = function() {
+        const sig = document.getElementById('signature_image').value;
+        if (!sig || sig.length < 100) {
+            alert('Please provide your handwritten signature.');
+            return false;
+        }
+        return true;
+    };
+</script>
+{% endif %}
+{% endblock %}

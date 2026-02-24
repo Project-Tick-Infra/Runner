@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Search Results for "{{ query }}"{% endblock %}
+
+{% block body %}
+<div class="hero-header" style="padding: 60px 0;">
+    <div class="container">
+        <h1>Search Results</h1>
+        <p class="lead">Showing results for <strong>"{{ query }}"</strong></p>
+    </div>
+</div>
+
+<div class="py-5">
+    <div class="container">
+        <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 40px;">
+            
+            <div class="results-main">
+                {# Handbook Results #}
+                <section class="mb-5">
+                    <h2 style="font-size: 1.5rem; border-bottom: 2px solid var(--pt-red); padding-bottom: 10px; margin-bottom: 20px;">Handbook & Documentation</h2>
+                    {% for item in handbook %}
+                        <div class="card mb-3" style="padding: 24px;">
+                            <h3 style="margin: 0; font-size: 1.25rem;">
+                                <a href="{{ path('app_handbook_show', {slug: item.slug}) }}" style="color: var(--text-primary); text-decoration: none;">{{ item.title }}</a>
+                            </h3>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px; margin-bottom: 0;">{{ item.content|striptags|slice(0, 200) }}...</p>
+                        </div>
+                    {% else %}
+                        <p style="color: #888;">No documentation matches found.</p>
+                    {% endfor %}
+                </section>
+
+                {# News Results #}
+                <section class="mb-5">
+                    <h2 style="font-size: 1.5rem; border-bottom: 2px solid #1976D2; padding-bottom: 10px; margin-bottom: 20px;">News & Updates</h2>
+                    {% for post in news %}
+                        <div class="card mb-3" style="padding: 24px;">
+                            <h3 style="margin: 0; font-size: 1.25rem;">
+                                {% if post.product %}
+                                    <a href="{{ path('app_product_news_show', {slug: post.product.slug, newsSlug: post.slug}) }}" style="color: var(--text-primary); text-decoration: none;">{{ post.title }}</a>
+                                {% else %}
+                                    <a href="{{ path('app_project_news_show', {slug: post.slug}) }}" style="color: var(--text-primary); text-decoration: none;">{{ post.title }}</a>
+                                {% endif %}
+                            </h3>
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px; margin-bottom: 0;">{{ post.description ?: post.content|striptags|slice(0, 200) }}...</p>
+                        </div>
+                    {% else %}
+                        <p style="color: #888;">No news matches found.</p>
+                    {% endfor %}
+                </section>
+            </div>
+
+            <div class="results-sidebar">
+                {# User Results #}
+                <section>
+                    <h2 style="font-size: 1.25rem; border-bottom: 2px solid #2E7D32; padding-bottom: 10px; margin-bottom: 20px;">Profiles</h2>
+                    {% for user in users %}
+                        <div class="card mb-3" style="padding: 16px; display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 40px; height: 40px; background: #eee; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden;">
+                                <img src="https://www.gravatar.com/avatar/{{ user.email|trim|lower|md5 }}?s=40&d=mp" alt="{{ user.username }}">
+                            </div>
+                            <a href="{{ path('app_public_profile', {username: user.username ?: user.githubUsername}) }}" style="font-weight: 600; color: var(--text-primary); text-decoration: none;">
+                                {{ user.username ?: user.githubUsername }}
+                            </a>
+                        </div>
+                    {% else %}
+                        <p style="color: #888;">No users found.</p>
+                    {% endfor %}
+                </section>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

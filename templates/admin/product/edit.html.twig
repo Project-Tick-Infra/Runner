@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Product - Admin{% endblock %}
+
+{% block body %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h1 style="margin: 0;">Edit Product</h1>
+        {{ include('admin/product/_delete_form.html.twig') }}
+    </div>
+
+    <div class="card" style="max-width: 800px; margin: 0 auto;">
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+                <button class="btn btn-primary">{{ button_label|default('Update Product') }}</button>
+                <a href="{{ path('app_admin_products_index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

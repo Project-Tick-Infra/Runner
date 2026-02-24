@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <!-- Hardening Headers -->
+        <meta http-equiv="X-Content-Type-Options" content="nosniff">
+        <meta http-equiv="X-Frame-Options" content="DENY">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://www.fsf.org https://www.youtube.com https://player.vimeo.com;">
+        
+        <title>{% block title %}{{ site_setting('site_title', 'Project Tick') }}{% endblock %}</title>
+        <link rel="icon" type="image/svg+xml" href="{{ asset('img/logo.svg') }}">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&family=Red+Hat+Text:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="/styles/app.css?v={{ 'now'|date('U') }}">
+    </head>
+    <body style="display: flex; flex-direction: column; min-height: 100vh;">
+        <!-- Red Hat Utility Bar -->
+        <div style="background-color: #EE0000; height: 4px; width: 100%;"></div>
+        
+        <nav class="site-nav" style="display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 80px;">
+            <div style="display: flex; align-items: center; height: 100%;">
+                <a href="{{ path('app_home') }}" class="brand" style="margin-right: 40px; display: flex; align-items: center; text-decoration: none; font-weight: 800; font-size: 1.3rem;">
+                    <img src="{{ asset('img/logo.svg') }}" alt="{{ site_setting('brand_name', 'Project Tick') }} Logo" style="height: 32px; width: auto; margin-right: 12px;">
+                    {{ site_setting('brand_name', 'Project Tick') }}
+                </a>
+
+                {# Mobile Toggle Button #}
+                <button id="mobile-nav-toggle" style="background: transparent; border: 1px solid #444; color: white; padding: 8px 12px; cursor: pointer; display: none; border-radius: 4px; margin-left: auto;">
+                    <svg width="24" height="20" viewBox="0 0 20 16" fill="currentColor"><rect width="20" height="2"/><rect y="7" width="20" height="2"/><rect y="14" width="20" height="2"/></svg>
+                </button>
+
+                <div class="site-nav-links" id="site-nav-links" style="display: flex; align-items: center; height: 100%;">
+                    <div class="nav-item-dropdown" style="position: relative; height: 100%;">
+                        <details style="height: 100%;">
+                            <summary style="list-style: none; cursor: pointer; height: 100%; display: flex; align-items: center; padding: 0 12px; font-weight: 600; font-family: var(--font-display);">
+                                {{ site_setting('nav_products_label', 'Products') }}
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style="margin-left: 6px; opacity: 0.6;">
+                                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </summary>
+                            <div class="dropdown-menu" style="position: absolute; top: 100%; left: 0; background: var(--pt-white); border: 1px solid var(--border-color); box-shadow: 0 8px 24px rgba(0,0,0,0.15); min-width: 250px; z-index: 1000; border-radius: 0 0 8px 8px;">
+                                {% set all_products = get_all_products() %}
+                                {% for prod in all_products %}
+                                    {% set prod_url = path('app_product_show', {'slug': prod.slug}) %}
+                                    <a href="{{ prod_url }}" style="display: block; padding: 16px 20px; border-bottom: 1px solid var(--pt-gray-100); color: var(--text-primary); text-decoration: none; transition: background 0.2s;">
+                                        <div style="font-weight: 700;">{{ prod.title }}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; font-weight: normal;">{{ prod.summary }}</div>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </details>
+                    </div>
+
+                    <a href="{{ path('app_community') }}" class="nav-link {% if 'app_community' in app.request.attributes.get('_route') %}active{% endif %}" style="padding: 0 12px; font-weight: 600;">Community</a>
+                    <a href="{{ path('app_roadmap') }}" class="nav-link {% if 'app_roadmap' in app.request.attributes.get('_route') %}active{% endif %}" style="padding: 0 12px; font-weight: 600;">Roadmap</a>
+                    <a href="{{ path('app_project_news') }}" class="nav-link {% if 'app_project_news' in app.request.attributes.get('_route') %}active{% endif %}" style="padding: 0 12px; font-weight: 600;">News</a>
+                    
+                    <div class="nav-item-dropdown" style="position: relative; height: 100%;">
+                        <details style="height: 100%;">
+                            <summary style="list-style: none; cursor: pointer; height: 100%; display: flex; align-items: center; padding: 0 12px; font-weight: 600; font-family: var(--font-display);">
+                                {{ site_setting('nav_resources_label', 'Resources') }}
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style="margin-left: 6px; opacity: 0.6;">
+                                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </summary>
+                            <div class="dropdown-menu" style="position: absolute; top: 100%; right: 0; background: var(--pt-white); border: 1px solid var(--border-color); box-shadow: 0 8px 24px rgba(0,0,0,0.15); min-width: 200px; z-index: 1000; border-radius: 0 0 8px 8px;">
+                                <a href="{{ path('app_ecosystem') }}" style="display: block; padding: 12px 20px; border-bottom: 1px solid var(--pt-gray-100); color: var(--text-primary); text-decoration: none; transition: background 0.2s; font-weight: 600;">
+                                    Ecosystem Map
+                                </a>
+                                <a href="{{ path('app_forge') }}" style="display: block; padding: 12px 20px; border-bottom: 1px solid var(--pt-gray-100); color: var(--text-primary); text-decoration: none; transition: background 0.2s; font-weight: 600;">
+                                    Forge (Git)
+                                </a>
+                                <a href="{{ path('app_mailing_lists') }}" style="display: block; padding: 12px 20px; border-bottom: 1px solid var(--pt-gray-100); color: var(--text-primary); text-decoration: none; transition: background 0.2s; font-weight: 600;">
+                                    Mailing Lists
+                                </a>
+                                <a href="{{ path('app_handbook') }}" style="display: block; padding: 12px 20px; border-bottom: 1px solid var(--pt-gray-100); color: var(--text-primary); text-decoration: none; transition: background 0.2s; font-weight: 600;">
+                                    Handbook
+                                </a>
+                                <a href="{{ path('app_licenses') }}" style="display: block; padding: 12px 20px; border-bottom: 1px solid var(--pt-gray-100); color: var(--text-primary); text-decoration: none; transition: background 0.2s; font-weight: 600;">
+                                    Licenses
+                                </a>
+                                <a href="{{ path('connect_microsoft_start') }}" style="display: block; padding: 12px 20px; color: var(--pt-red); text-decoration: none; transition: background 0.2s; font-weight: 700;">
+                                    Minecraft Login
+                                </a>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+
+            <div class="desktop-extra" style="display: flex; align-items: center; gap: 16px; flex-shrink: 1;">
+                {# Professional Search Bar #}
+                <div class="search-container" style="position: relative; width: 220px; transition: width 0.3s;">
+                    <form action="{{ path('app_global_search') }}" method="GET" style="margin: 0;">
+                        <input type="text" name="q" placeholder="Search..." 
+                               style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 16px 8px 40px; border-radius: 20px; width: 100%; font-size: 0.85rem; outline: none; transition: all 0.3s; border-bottom: 1px solid rgba(255,255,255,0.2);"
+                               onfocus="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='var(--pt-red)'; this.parentElement.parentElement.style.width='300px'"
+                               onblur="this.parentElement.parentElement.style.width='220px'">
+                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style="position: absolute; left: 14px; top: 50%; translate: 0 -50%; opacity: 0.5;">
+                            <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </form>
+                </div>
+
+                <div class="nav-auth-links" style="display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+                    {# Theme Toggle #}
+                    <button id="theme-toggle" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                        <svg id="theme-toggle-dark-icon" class="hidden" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                        <svg id="theme-toggle-light-icon" class="hidden" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
+                        </svg>
+                    </button>
+
+                    {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                        <a href="{{ is_granted('ROLE_ADMIN') ? path('app_admin_dashboard') : path('app_user_dashboard') }}" style="text-decoration: none;">
+                            <span style="background: var(--pt-red); color: white; padding: 10px 16px; font-weight: bold; border-radius: 4px; font-size: 0.8rem;">{{ site_setting('nav_panel_badge', 'PANEL') }}</span>
+                        </a>
+                        <a href="{{ path('app_logout') }}" style="color: #D2D2D2; text-decoration: none; font-weight: 600; font-size: 0.85rem;">Logout</a>
+                    {% else %}
+                        <a href="{{ path('app_login') }}" style="background: white; color: black; padding: 8px 20px; font-weight: bold; text-decoration: none; border-radius: 4px; font-size: 0.85rem;">{{ site_setting('nav_login_btn', 'LOGIN') }}</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        <style>
+            .hidden { display: none !important; }
+            
+            /* Header Text Fixes for Dark/Light Mode */
+            .site-nav .brand, 
+            .site-nav summary,
+            .site-nav .nav-link {
+                color: white !important;
+            }
+            
+            body.dark-theme .site-nav summary,
+            body.dark-theme .site-nav .brand {
+                color: #FFFFFF !important;
+            }
+
+            @media (max-width: 1200px) {
+                #mobile-nav-toggle { display: block !important; }
+                .desktop-extra { display: none !important; }
+                
+                .site-nav-links {
+                    position: fixed !important;
+                    top: 84px !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    bottom: 0 !important;
+                    height: calc(100vh - 84px) !important;
+                    background: #000 !important;
+                    flex-direction: column !important;
+                    display: none !important;
+                    padding: 40px !important;
+                    z-index: 999999 !important;
+                    width: 100% !important;
+                    align-items: flex-start !important;
+                }
+
+                .site-nav-links.show {
+                    display: flex !important;
+                }
+
+                .site-nav-links > a, .nav-item-dropdown, .nav-item-dropdown details {
+                    width: 100% !important;
+                    height: auto !important;
+                    padding: 0 !important;
+                    margin-right: 0 !important;
+                    font-size: 1.2rem !important;
+                }
+
+                .nav-item-dropdown summary {
+                    height: auto !important;
+                    padding: 20px 0 !important;
+                    border-bottom: 1px solid #222 !important;
+                }
+
+                .site-nav-links > a {
+                    padding: 20px 0 !important;
+                    border-bottom: 1px solid #222 !important;
+                }
+
+                .dropdown-menu {
+                    position: static !important;
+                    box-shadow: none !important;
+                    background: rgba(255, 255, 255, 0.05) !important;
+                    border: none !important;
+                    padding: 0 !important;
+                    margin: 10px 0 !important;
+                    border-radius: 8px !important;
+                    width: 100% !important;
+                }
+
+                .dropdown-menu a {
+                    color: #FFFFFF !important;
+                    padding: 16px 20px !important;
+                    border-bottom: 1px solid #222 !important;
+                }
+
+                .dropdown-menu a div {
+                    color: #FFFFFF !important;
+                }
+
+                .dropdown-menu a span, 
+                .dropdown-menu a div:last-child {
+                    color: #A0A0A0 !important;
+                }
+            }
+
+
+        </style>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var toggle = document.getElementById('mobile-nav-toggle');
+                var links = document.getElementById('site-nav-links');
+                
+                if (toggle && links) {
+                    toggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (links.classList.contains('show')) {
+                            links.classList.remove('show');
+                        } else {
+                            links.classList.add('show');
+                        }
+                    });
+                }
+
+                // Theme Toggle Logic
+                const themeToggleBtn = document.getElementById('theme-toggle');
+                const darkIcon = document.getElementById('theme-toggle-dark-icon');
+                const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+                // Initial check
+                if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.body.classList.add('dark-theme');
+                    lightIcon.classList.remove('hidden');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                    darkIcon.classList.remove('hidden');
+                }
+
+                themeToggleBtn.addEventListener('click', function() {
+                    darkIcon.classList.toggle('hidden');
+                    lightIcon.classList.toggle('hidden');
+
+                    if (document.body.classList.contains('dark-theme')) {
+                        document.body.classList.remove('dark-theme');
+                        localStorage.setItem('theme', 'light');
+                    } else {
+                        document.body.classList.add('dark-theme');
+                        localStorage.setItem('theme', 'dark');
+                    }
+                });
+            });
+        </script>
+
+        <div class="container flash-container" style="padding-top: 24px;">
+            {% for label, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="flash flash-{{ label }}">
+                        <div class="flash-icon">
+                            {% if label == 'success' %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            {% else %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            {% endif %}
+                        </div>
+                        <div class="flash-message">{{ message }}</div>
+                        <button class="flash-close" onclick="this.parentElement.style.display='none'">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+            
+        {% block body %}{% endblock %}
+
+        <div id="cookie-consent" style="position: fixed; bottom: 0; left: 0; width: 100%; background: #151515; color: white; padding: 24px; z-index: 10000; display: none; box-shadow: 0 -4px 20px rgba(0,0,0,0.4); border-top: 2px solid #EE0000;">
+            <div class="container" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px;">
+                <div style="flex: 1; min-width: 300px;">
+                    <p style="margin: 0; font-size: 1rem; line-height: 1.5;">
+                        {{ site_setting('cookie_text', 'This website uses cookies to ensure you get the best experience on our website.') }}
+                        <a href="{{ site_setting('legal_privacy_url', '#') }}" style="color: #66b2ff; text-decoration: underline; margin-left: 8px;">Learn more</a>
+                    </p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <button id="cookie-accept" class="btn btn-primary" style="padding: 10px 24px;">{{ site_setting('cookie_accept_btn', 'Accept All') }}</button>
+                    <button id="cookie-reject" class="btn btn-secondary" style="background: transparent; border: 1px solid white; color: white; padding: 10px 24px;">{{ site_setting('cookie_reject_btn', 'Reject') }}</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                if (!localStorage.getItem('cookieCheck')) {
+                    document.getElementById('cookie-consent').style.display = 'block';
+                }
+                
+                document.getElementById('cookie-accept').addEventListener('click', function() {
+                    localStorage.setItem('cookieCheck', 'accepted');
+                    document.getElementById('cookie-consent').style.display = 'none';
+                });
+
+                document.getElementById('cookie-reject').addEventListener('click', function() {
+                    localStorage.setItem('cookieCheck', 'rejected');
+                    document.getElementById('cookie-consent').style.display = 'none';
+                });
+            });
+        </script>
+
+        <footer style="margin-top: auto; padding: 100px 0; background: #fafafa; border-top: 1px solid #eee; position: relative; overflow: hidden;">
+            <div class="footer-side-text" style="position: absolute; right: 50%; margin-right: 180px; top: 50%; transform: translateY(-50%); font-family: var(--font-display); font-weight: 900; font-size: 8rem; color: rgba(0,0,0,0.05); text-transform: uppercase; letter-spacing: -0.05em; user-select: none; pointer-events: none; line-height: 1; white-space: nowrap;">
+                Project
+            </div>
+
+            <div class="container" style="position: relative; z-index: 2; text-align: center;">
+                <div style="max-width: 600px; margin: 0 auto;">
+                    {# Social Links #}
+                    <div style="margin-bottom: 32px; display: flex; justify-content: center; gap: 32px; font-weight: 600;">
+                        {% if site_setting('social_github') %}
+                            <a href="{{ site_setting('social_github') }}" target="_blank" style="color: var(--pt-black); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                                {{ site_setting('footer_social_github_label', 'GitHub') }}
+                            </a>
+                        {% endif %}
+                        {% if site_setting('social_discord') %}
+                             <a href="{{ site_setting('social_discord') }}" target="_blank" style="color: var(--pt-black); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                                {{ site_setting('footer_social_discord_label', 'Discord') }}
+                             </a>
+                        {% endif %}
+                        {% if site_setting('social_twitter') %}
+                             <a href="{{ site_setting('social_twitter') }}" target="_blank" style="color: var(--pt-black); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                                {{ site_setting('footer_social_twitter_label', 'X (Twitter)') }}
+                             </a>
+                        {% endif %}
+                    </div>
+
+                    {# Downloads Portal #}
+                    <div style="margin-bottom: 32px; display: flex; justify-content: center; gap: 24px; font-size: 0.95rem; font-weight: bold;">
+                        {% set download_products = get_all_products() %}
+                        {% for p in download_products %}
+                            {% if p.productType != 'library' %}
+                                <a href="{{ path('app_product_download', {'slug': p.slug}) }}" style="color: var(--pt-red); text-decoration: none;">Download {{ p.title }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    {# Legal Links #}
+                    <div style="margin-bottom: 32px; display: flex; justify-content: center; gap: 24px; font-size: 0.9rem;">
+                         {% if site_setting('legal_tos_url') %}
+                            <a href="{{ site_setting('legal_tos_url') }}" style="color: #666; text-decoration: none;">{{ site_setting('footer_legal_tos_label', 'Terms of Service') }}</a>
+                        {% endif %}
+                         {% if site_setting('legal_privacy_url') %}
+                            <a href="{{ site_setting('legal_privacy_url') }}" style="color: #666; text-decoration: none;">{{ site_setting('footer_legal_privacy_label', 'Privacy Policy') }}</a>
+                        {% endif %}
+                        <a href="{{ path('app_branding') }}" style="color: #666; text-decoration: none;">Branding</a>
+                        <a href="{{ path('app_status') }}" style="color: #666; text-decoration: none; font-weight: bold; border-left: 1px solid #ddd; padding-left: 20px; color: var(--pt-red);">System Status</a>
+                    </div>
+
+                    <p style="color: #666; font-size: 0.9rem; margin: 0; max-width: none;">&copy; {{ "now"|date("Y") }} {{ site_setting('footer_text', 'Project Tick')|raw }}</p>
+                </div>
+            </div>
+
+            <div class="footer-side-text" style="position: absolute; left: 50%; margin-left: 310px; top: 50%; transform: translateY(-50%); font-family: var(--font-display); font-weight: 900; font-size: 8rem; color: rgba(0,0,0,0.05); text-transform: uppercase; letter-spacing: -0.05em; user-select: none; pointer-events: none; line-height: 1; white-space: nowrap;">
+                Tick
+            </div>
+        </footer>
+
+
+
+
+
+
+
+
+        <style>
+            body.dark-theme .footer-side-text { color: rgba(255,255,255,0.05) !important; }
+            @media (max-width: 1200px) {
+                .footer-side-text { display: none !important; }
+                .footer-layout { justify-content: center !important; }
+            }
+        </style>
+
+    </body>
+</html>

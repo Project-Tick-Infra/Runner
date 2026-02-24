@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        @page {
+            margin: 2cm;
+        }
+        body {
+            font-family: "Times New Roman", Times, serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2pt solid #000;
+            padding-bottom: 20px;
+        }
+        .logo-box {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .logo-text {
+            font-size: 24pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2pt;
+        }
+        .doc-title {
+            font-size: 18pt;
+            font-weight: bold;
+            margin: 10px 0;
+            text-transform: uppercase;
+        }
+        .meta-info {
+            font-size: 10pt;
+            margin-bottom: 20px;
+        }
+        .content {
+            text-align: left;
+            white-space: pre-wrap;
+            margin-bottom: 40px;
+        }
+        .signature-table {
+            width: 100%;
+            margin-top: 30px;
+        }
+        .sig-cell {
+            vertical-align: top;
+            width: 50%;
+        }
+        .sig-label {
+            font-size: 9pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #444;
+        }
+        .sig-value {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .sig-image {
+            max-width: 250px;
+            height: auto;
+            border: 1pt solid #000;
+            padding: 5px;
+        }
+        .oath-box {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1pt solid #000;
+            font-family: monospace;
+            font-size: 10pt;
+        }
+        .provenance {
+            margin-top: 40px;
+            border-top: 1pt solid #000;
+            padding-top: 20px;
+            font-family: monospace;
+            font-size: 8pt;
+        }
+        .footer-note {
+            text-align: center;
+            font-size: 9pt;
+            margin-top: 30px;
+            font-style: italic;
+        }
+        .seal-box {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1pt dashed #000;
+            font-family: monospace;
+            font-size: 8pt;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo-box">
+             {# If an actual image is provided via absolute path it will work in Dompdf #}
+             <div class="logo-text">PROJECT TICK</div>
+        </div>
+        <div class="doc-title">Contributor License Agreement</div>
+        <div class="meta-info">
+            <strong>CLA_VERSION:</strong> {{ signature.version }}<br>
+            <strong>DOC_SOURCE_SHA256:</strong> {{ doc_sha }}
+        </div>
+    </div>
+
+    <div class="content">
+        {{ license.content }}
+    </div>
+
+    <div class="signature-section">
+        <table class="signature-table">
+            <tr>
+                <td class="sig-cell">
+                    <div class="sig-label">Signer Legal Name</div>
+                    <div class="sig-value">{{ signature.signerName }}</div>
+                    
+                    <div class="sig-label">GitHub Identity</div>
+                    <div class="sig-value" style="font-size: 11pt; margin-bottom: 10px;">
+                        @{{ signature.githubUsername }}<br>
+                        ID: {{ signature.githubNumericId }}
+                    </div>
+
+                    {% if signature.gitlabUsername %}
+                    <div class="sig-label">GitLab Identity</div>
+                    <div class="sig-value" style="font-size: 11pt;">
+                        @{{ signature.gitlabUsername }}<br>
+                        ID: {{ signature.gitlabNumericId }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td class="sig-cell" style="text-align: right;">
+                    <div class="sig-label">Digital Signature Seal</div>
+                    <div style="margin-top: 5px;">
+                        <img src="{{ signature.signatureImage }}" class="sig-image">
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="oath-box">
+            <strong>OATH_OF_COMPACT:</strong><br>
+            "I, {{ signature.signerName|upper }}, HEREBY ASSIGN AND TRANSFER ALL RIGHT, TITLE, AND INTEREST IN AND TO MY CONTRIBUTIONS UNDER PROJECT TICK CLA {{ signature.version }}"
+        </div>
+    </div>
+
+    <div class="provenance">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 50%; vertical-align: top;">
+                    <strong>PROVENANCE_METADATA:</strong><br>
+                    IP_ADDRESS: {{ signature.ipAddress }}<br>
+                    USER_AGENT: {{ signature.userAgent }}<br>
+                    NONCE_ID: {{ signature.nonce }}<br>
+                    DATE_OF_BINDING: {{ signature.verifiedAt|date('Y-m-d H:i:s T') }}
+                </td>
+                <td style="width: 50%; vertical-align: top; text-align: right; word-wrap: break-word; word-break: break-all;">
+                    <strong>CANONICAL_SIGNATURE_HASH:</strong><br>
+                    <span style="font-size: 7pt; display: block;">{{ signature.sha }}</span>
+                </td>
+            </tr>
+        </table>
+
+        <div class="seal-box">
+            <strong>SERVER_VERIFIED_ED25519_SEAL:</strong><br>
+            {{ signature.serverSignature }}
+        </div>
+    </div>
+
+    <div class="footer-note">
+        This document was digitally executed and verified under the jurisdiction of Project Tick Ecosystem.<br>
+        Immutable Audit Record ID: {{ signature.id }}
+    </div>
+</body>
+</html>

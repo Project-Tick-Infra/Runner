@@ -1,0 +1,89 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ site_setting('about_title_fallback', 'About ProjT Launcher') }} - {{ site_setting('site_title', 'Project Tick') }}{% endblock %}
+
+{% block body %}
+<div class="container">
+  {% if product %}
+      <h1>What is {{ product.title }}?</h1>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap;">
+        {% if product.productStatus %}
+            {% set statusClass = product.productStatus == 'active' ? 'badge-status-active' : (product.productStatus == 'deprecated' ? 'badge-status-warn' : 'badge-status-danger') %}
+            <span class="badge badge-pill {{ statusClass }}">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background-color: currentColor;"></span>
+                {{ product.productStatus|capitalize }}
+            </span>
+        {% endif %}
+
+        {% if product.productType %}
+            <span class="badge badge-pill badge-outline">
+                {{ product.productType|capitalize }}
+            </span>
+        {% endif %}
+
+        {% if product.productVisibility %}
+             <span class="badge badge-pill badge-outline">
+                {{ product.productVisibility|capitalize }}
+            </span>
+        {% endif %}
+
+         {% if product.productOwner %}
+             <span class="badge badge-pill badge-outline">
+                Owner: {{ product.productOwner }}
+            </span>
+        {% endif %}
+      </div>
+      
+      {% if product.aboutContent %}
+          <div style="line-height: 1.7; font-size: 1.1rem; margin-bottom: 40px;">
+              {{ product.aboutContent|markdown_to_html|raw }}
+          </div>
+      {% elseif product.description %}
+          <div style="line-height: 1.7; font-size: 1.1rem; margin-bottom: 40px;">
+               <!-- Fallback to main description if specific about content is empty -->
+              {{ product.description|markdown_to_html|raw }}
+          </div>
+      {% else %}
+          <p>ProjT Launcher is a custom launcher for Minecraft that was forked from MultiMC. It allows the creation, and management of multiple installations of the game, or "instances" rather, each having their own separate mods, resource packs, settings, and more.</p>
+      {% endif %}
+
+      {% if product.features is not empty %}
+          <h2>Key Features</h2>
+          <ul>
+              {% for feature in product.features %}
+                  <li>{{ feature }}</li>
+              {% endfor %}
+          </ul>
+      {% endif %}
+  {% else %}
+      <h1>{{ site_setting('about_title_fallback', 'What is ProjT Launcher?') }}</h1>
+      <p>{{ site_setting('about_default_desc_1', 'ProjT Launcher is a custom launcher for Minecraft that was forked from MultiMC. It allows the creation, and management of multiple installations of the game, or "instances" rather, each having their own separate mods, resource packs, settings, and more.') }}</p>
+      
+      <p>{{ site_setting('about_default_desc_2', 'While originally being forked over packaging/redistribution concerns, ProjT Launcher brings new and exciting features developed by the community for the community. Furthermore, ProjT Launcher is still just as true to its roots as ever in providing a project that vows to never bring hostility to those looking to fork, redistribute, or repackage, so long as the terms of our license are respected.') }}</p>
+
+      <h2>{{ site_setting('launcher_feature_title', 'Key Features') }}</h2>
+      <ul>
+        <li>{{ site_setting('about_feat_1', 'Managing multiple, isolated instances of Minecraft.') }}</li>
+        <li>{{ site_setting('about_feat_2', 'Easy installation of mod loaders (Forge, Fabric, Quilt).') }}</li>
+        <li>{{ site_setting('about_feat_3', 'Install modpacks from CurseForge, Modrinth, and Technic.') }}</li>
+        <li>{{ site_setting('about_feat_4', 'Access all your logs easily.') }}</li>
+        <li>{{ site_setting('about_feat_5', 'Built using Qt technologies for maximum performance.') }}</li>
+      </ul>
+  {% endif %}
+
+  <h2>{{ site_setting('about_contr_title', 'Contributors') }}</h2>
+  {% if contributors is not empty %}
+    <p>{{ site_setting('about_contr_thanks', 'Thank you to all the people who have contributed to this project!') }}</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; margin-bottom: 40px;">
+        {% for contributor in contributors %}
+            <a href="{{ contributor.html_url }}" target="_blank" title="{{ contributor.login }}" style="text-decoration: none;">
+                <img src="{{ contributor.avatar_url }}" alt="{{ contributor.login }}" style="width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--pt-gray-200); transition: transform 0.2s;">
+            </a>
+        {% endfor %}
+    </div>
+  {% else %}
+    <p>{{ site_setting('about_contr_empty', 'Contributors will be listed here.') }}</p>
+  {% endif %}
+</div>
+{% endblock %}

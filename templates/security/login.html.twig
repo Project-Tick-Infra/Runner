@@ -1,0 +1,173 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Log in - Project Tick{% endblock %}
+
+{% block body %}
+<section class="auth-section">
+    <div class="container container-center">
+        <div class="card auth-card">
+            <div style="margin-bottom: 40px;">
+                <img src="{{ asset('img/logo.svg') }}" alt="Project Tick Logo" style="width: 64px; height: 64px; margin-bottom: 24px;">
+                <h1>Log in to Project Tick</h1>
+                <p>Access your dashboard and developer resources using your GitHub account.</p>
+            </div>
+
+            {% if error %}
+                <div style="background: rgba(238, 0, 0, 0.1); border: 1px solid var(--pt-red); padding: 12px; margin-bottom: 24px; color: var(--pt-red); font-size: 0.875rem;">
+                    {{ error.messageKey|trans(error.messageData, 'security') }}
+                </div>
+            {% endif %}
+
+            <div style="margin-bottom: 24px;">
+                <a href="{{ path('connect_github_start') }}" class="btn btn-secondary" style="width: 100%; gap: 12px; justify-content: center; display: flex; align-items: center; margin-bottom: 12px;">
+                    <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" width="20" height="20">
+                    Continue with GitHub
+                </a>
+                <a href="{{ path('connect_gitlab_start') }}" class="btn btn-secondary" style="width: 100%; gap: 12px; justify-content: center; display: flex; align-items: center; margin-bottom: 12px;">
+                    <img src="https://about.gitlab.com/images/press/press-kit-icon.svg" alt="GitLab" width="20" height="20">
+                    Continue with GitLab
+                </a>
+                <a href="{{ path('connect_microsoft_start') }}" class="btn btn-secondary" style="width: 100%; gap: 12px; justify-content: center; display: flex; align-items: center;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/f/f9/Xbox_one_logo.svg" alt="Microsoft/Xbox" width="20" height="20">
+                    Continue with Microsoft
+                </a>
+            </div>
+
+            <div style="display: flex; align-items: center; margin: 24px 0; color: var(--pt-gray-400);">
+                <div style="flex: 1; height: 1px; background: var(--pt-gray-200);"></div>
+                <span style="padding: 0 16px; font-size: 0.8rem; text-transform: uppercase; font-weight: bold;">or</span>
+                <div style="flex: 1; height: 1px; background: var(--pt-gray-200);"></div>
+            </div>
+
+            <form method="post" style="text-align: left;">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="inputEmail" class="form-label">Email address</label>
+                    <input type="email" value="{{ last_username }}" name="email" id="inputEmail" class="form-control" autocomplete="email" required autofocus placeholder="name@company.com">
+                </div>
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="inputPassword" class="form-label">Password</label>
+                        <a href="{{ path('app_forgot_password_request') }}" style="font-size: 0.8rem; color: var(--pt-red); text-decoration: none;">Forgot password?</a>
+                    </div>
+                    <input type="password" name="password" id="inputPassword" class="form-control" autocomplete="current-password" required placeholder="••••••••">
+                </div>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <button class="btn btn-primary" type="submit" style="width: 100%; justify-content: center;">
+                    Sign in
+                </button>
+
+                <div style="display: flex; align-items: center; margin: 24px 0; color: var(--pt-gray-400);">
+                    <div style="flex: 1; height: 1px; background: var(--pt-gray-200);"></div>
+                    <span style="padding: 0 16px; font-size: 0.8rem; text-transform: uppercase; font-weight: bold;">modern</span>
+                    <div style="flex: 1; height: 1px; background: var(--pt-gray-200);"></div>
+                </div>
+
+                <button id="passkey-login-btn" type="button" class="btn btn-secondary" style="width: 100%; gap: 10px; justify-content: center; border-color: var(--pt-red); color: var(--pt-red);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3m-3-3l-2.5-2.5" /></svg>
+                    Sign in with Passkey
+                </button>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <a href="{{ path('app_register') }}" style="font-size: 0.9rem; color: var(--pt-red); text-decoration: none;">Create a new account</a>
+                </div>
+            </form>
+
+            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 32px;">
+                By logging in, you agree to our terms of service and privacy policy.
+            </p>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passkeyBtn = document.getElementById('passkey-login-btn');
+    const emailInput = document.getElementById('inputEmail');
+
+    passkeyBtn.addEventListener('click', async function() {
+        passkeyBtn.disabled = true;
+        const originalText = passkeyBtn.innerHTML;
+        passkeyBtn.textContent = 'Verifying...';
+
+        try {
+            const optionsResponse = await fetch('{{ path('app_passkey_login_options') }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email: emailInput.value })
+            });
+            const options = await optionsResponse.json();
+            console.log("Login Options:", options);
+
+            options.challenge = base64ToUint8Array(options.challenge);
+            if (options.allowCredentials) {
+                options.allowCredentials = options.allowCredentials.map(c => ({
+                    ...c,
+                    id: base64ToUint8Array(c.id)
+                }));
+            }
+
+            const assertion = await navigator.credentials.get({ publicKey: options });
+
+            const verifyResponse = await fetch('{{ path('app_passkey_login_verify') }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    id: assertion.id,
+                    rawId: uint8ArrayToBase64(new Uint8Array(assertion.rawId)),
+                    type: assertion.type,
+                    response: {
+                        authenticatorData: uint8ArrayToBase64(new Uint8Array(assertion.response.authenticatorData)),
+                        clientDataJSON: uint8ArrayToBase64(new Uint8Array(assertion.response.clientDataJSON)),
+                        signature: uint8ArrayToBase64(new Uint8Array(assertion.response.signature)),
+                        userHandle: assertion.response.userHandle ? uint8ArrayToBase64(new Uint8Array(assertion.response.userHandle)) : null
+                    }
+                })
+            });
+
+            const result = await verifyResponse.json();
+            if (result.success) {
+                window.location.href = '{{ path('app_home') }}';
+            } else {
+                throw new Error(result.error || 'Authentication failed');
+            }
+
+        } catch (err) {
+            console.error("Passkey Login Error:", err);
+            alert('Passkey Login Error: ' + err.message);
+            passkeyBtn.disabled = false;
+            passkeyBtn.innerHTML = originalText;
+        }
+    });
+
+    function base64ToUint8Array(str) {
+        if (!str || typeof str !== 'string') return new Uint8Array(0);
+        
+        try {
+            let base64 = str.replace(/\s/g, '').replace(/-/g, '+').replace(/_/g, '/');
+            
+            // If not valid base64, treat as raw
+            if (!/^[a-zA-Z0-9+/]*={0,2}$/.test(base64) || base64.length < 2) {
+                return new TextEncoder().encode(str);
+            }
+
+            while (base64.length % 4 !== 0) base64 += '=';
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        } catch (e) {
+            return new TextEncoder().encode(str);
+        }
+    }
+
+    function uint8ArrayToBase64(array) {
+        const b64 = btoa(String.fromCharCode.apply(null, array));
+        return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+});
+</script>
+{% endblock %}

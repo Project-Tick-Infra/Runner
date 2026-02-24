@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Products - Admin{% endblock %}
+
+{% block body %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h1 style="margin: 0;">Products</h1>
+        <a href="{{ path('app_admin_products_new') }}" class="btn btn-primary">Create New</a>
+    </div>
+
+    <div class="card" style="padding: 0;">
+        <table class="table" style="margin: 0;">
+            <thead>
+                <tr>
+                    <th style="border-top: none;">Title</th>
+                    <th style="border-top: none;">Type</th>
+                    <th style="border-top: none;">Status</th>
+                    <th style="border-top: none;">Visibility</th>
+                    <th style="border-top: none;">Version</th>
+                    <th style="border-top: none; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for product in products %}
+                <tr>
+                    <td>
+                        <div style="font-weight: bold;">{{ product.title }}</div>
+                        <code style="font-size: 0.8rem; color: var(--text-secondary);">{{ product.slug }}</code>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; border: 1px solid var(--pt-gray-200); background: var(--pt-gray-10);">
+                            {{ product.productType|default('software')|capitalize }}
+                        </span>
+                    </td>
+                    <td>
+                        {% set statusColor = product.productStatus == 'active' ? '#2E7D32' : (product.productStatus == 'deprecated' ? '#FFC107' : '#D32F2F') %}
+                        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.9rem;">
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background-color: {{ statusColor }};"></span>
+                            {{ product.productStatus|default('active')|capitalize }}
+                        </span>
+                    </td>
+                    <td>{{ product.productVisibility|default('public')|capitalize }}</td>
+                    <td>{{ product.version }}</td>
+                    <td style="text-align: right;">
+                        <a href="{{ path('app_admin_products_edit', {'id': product.id}) }}" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 8px;">Edit</a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        No products found.
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 24px;">
+        <a href="{{ path('app_admin_dashboard') }}">&larr; Back to Dashboard</a>
+    </div>
+{% endblock %}

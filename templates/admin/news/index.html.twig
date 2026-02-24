@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Manage News{% endblock %}
+
+{% block body %}
+<div class="py-5">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px;">
+        <div>
+            <h1>Manage News</h1>
+            <p>Publish updates and announcements to the community.</p>
+        </div>
+        <a href="{{ path('app_admin_news_new') }}" class="btn btn-primary">+ Create New Post</a>
+    </div>
+    
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Target Product</th>
+                    <th>Slug</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in news %}
+                <tr>
+                    <td><code>{{ post.date|date('Y-m-d') }}</code></td>
+                    <td style="font-weight: bold;">{{ post.title }}</td>
+                    <td>
+                        <span style="background: var(--pt-gray-200); padding: 4px 8px; font-size: 0.8rem; font-weight: bold;">
+                            {{ post.product ? post.product.title : 'Root (General)' }}
+                        </span>
+                    </td>
+                    <td><code>{{ post.slug }}</code></td>
+                    <td>
+                        <div style="display: flex; gap: 12px;">
+                            <a href="{{ path('app_admin_news_edit', {id: post.id}) }}" class="btn btn-secondary" style="padding: 4px 12px; font-size: 0.8rem;">Edit</a>
+                            <a href="{{ path('app_news_show', {slug: post.slug}) }}" target="_blank" class="btn btn-ghost" style="padding: 4px 0; font-size: 0.8rem;">Preview</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center">No news posts found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 40px;">
+        <a href="{{ path('app_admin_dashboard') }}" class="btn btn-secondary">&larr; Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

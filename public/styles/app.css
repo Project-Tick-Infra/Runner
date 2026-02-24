@@ -1,0 +1,1129 @@
+/*
+
+TRADEMARK NOTICE
+
+PROJECT TICK™ TRADEMARK AND BRAND POLICY
+
+OWNERSHIP OF THE MARKS
+PROJECT TICK™, THE PROJECT TICK NAME, THE PROJECT TICK LOGO, AND ALL RELATED BRANDING ELEMENTS (COLLECTIVELY, THE “MARKS”) ARE TRADEMARKS OF MEHMET SAMET DUMAN.
+
+ALL RIGHTS IN THE MARKS ARE RESERVED.
+
+THIS TRADEMARK POLICY GOVERNS USE OF THE MARKS INDEPENDENTLY OF ANY OPEN SOURCE LICENSE APPLICABLE TO SOURCE CODE, DOCUMENTATION, OR OTHER MATERIALS.
+
+RELATIONSHIP TO OPEN SOURCE LICENSES
+EACH REPOSITORY UNDER THE PROJECT TICK NAMESPACE IS LICENSED UNDER ITS RESPECTIVE OPEN SOURCE LICENSE (E.G., MIT, BSD, APACHE-2.0, GPL, MS-PL, ETC.).
+
+THESE LICENSES GOVERN THE USE, MODIFICATION, AND REDISTRIBUTION OF SOURCE CODE ONLY.
+
+OPEN SOURCE LICENSES DO NOT GRANT:
+
+RIGHTS TO USE THE PROJECT TICK NAME
+RIGHTS TO USE THE PROJECT TICK LOGO
+RIGHTS TO USE PROJECT TICK BRANDING OR TRADE DRESS
+RIGHTS TO IMPLY AFFILIATION, ENDORSEMENT, SPONSORSHIP, OR OFFICIAL STATUS
+TRADEMARK RIGHTS ARE SEPARATE FROM COPYRIGHT LICENSES.
+
+PERMITTED USES
+THE FOLLOWING USES ARE GENERALLY PERMITTED WITHOUT PRIOR WRITTEN PERMISSION:
+
+FACTUAL REFERENCES (E.G., “COMPATIBLE WITH PROJECT TICK”).
+ACCURATE DESCRIPTION OF UNMODIFIED OFFICIAL RELEASES.
+NON-COMMERCIAL COMMENTARY, RESEARCH, EDUCATIONAL, OR JOURNALISTIC REFERENCES.
+PERMITTED USE MUST NOT:
+
+CREATE CONFUSION REGARDING ORIGIN
+SUGGEST SPONSORSHIP, APPROVAL, OR ENDORSEMENT
+PRESENT MODIFIED VERSIONS AS OFFICIAL RELEASES
+MODIFIED AND REDISTRIBUTED VERSIONS
+OPEN SOURCE LICENSES PERMIT MODIFICATION AND REDISTRIBUTION OF SOURCE CODE.
+
+HOWEVER:
+
+MODIFIED VERSIONS MUST NOT USE THE PROJECT TICK NAME OR LOGO IN A WAY THAT IMPLIES OFFICIAL STATUS.
+FORKS MUST USE DISTINCT BRANDING.
+DERIVATIVE WORKS MUST CLEARLY INDICATE THAT THEY ARE MODIFIED VERSIONS.
+USE OF PHRASES SUCH AS “OFFICIAL,” “CERTIFIED,” OR SIMILAR TERMINOLOGY IS PROHIBITED WITHOUT AUTHORIZATION.
+PERMISSIBLE EXAMPLE: "BASED ON PROJECT TICK"
+
+IMPERMISSIBLE EXAMPLE: "OFFICIAL PROJECT TICK BUILD" UNLESS EXPLICITLY AUTHORIZED.
+
+COMMERCIAL USE AND SAAS DEPLOYMENTS
+THE MARKS MAY NOT BE USED:
+
+AS PART OF A PRODUCT NAME
+AS PART OF A COMPANY NAME
+AS PART OF A COMMERCIAL SAAS SERVICE NAME
+AS PART OF A REGISTERED DOMAIN NAME
+IN PAID ADVERTISING OR PROMOTIONAL MATERIALS
+WITHOUT PRIOR WRITTEN PERMISSION.
+
+OPERATING A COMMERCIAL SERVICE USING PROJECT TICK SOURCE CODE DOES NOT GRANT THE RIGHT TO REPRESENT THAT SERVICE AS AN OFFICIAL PROJECT TICK SERVICE.
+
+ONLY SERVICES DIRECTLY OPERATED BY MEHMET SAMET DUMAN UNDER THE PROJECT TICK IDENTITY MAY USE THE MARKS IN A COMMERCIAL CONTEXT.
+
+OFFICIAL RELEASES
+AN “OFFICIAL PROJECT TICK RELEASE” IS A VERSION THAT:
+
+IS BUILT AND DISTRIBUTED BY THE PROJECT TICK MAINTAINERS
+IS PUBLISHED THROUGH OFFICIAL COMMUNICATION CHANNELS
+IS IDENTIFIED BY OFFICIAL RELEASE TAGS OR SIGNATURES
+MODIFIED BUILDS, EVEN IF COMPLIANT WITH THE APPLICABLE OPEN SOURCE LICENSE, MUST NOT BE PRESENTED AS OFFICIAL RELEASES.
+
+LOGO USAGE
+THE PROJECT TICK LOGO IS PROTECTED BY COPYRIGHT AND TRADEMARK LAW.
+
+IF LICENSED UNDER A CREATIVE COMMONS LICENSE (E.G., CC BY-NC-ND), SUCH LICENSE APPLIES ONLY WITHIN ITS STATED SCOPE AND DOES NOT WAIVE TRADEMARK PROTECTIONS.
+
+THE LOGO MAY NOT BE:
+
+MODIFIED
+RECOLORED
+COMBINED WITH OTHER MARKS
+USED FOR COMMERCIAL SERVICES
+EMBEDDED IN DERIVATIVE BRANDING
+WITHOUT WRITTEN AUTHORIZATION.
+
+DOMAIN NAMES AND CORPORATE IDENTIFIERS
+THE MARKS MAY NOT BE USED:
+
+IN DOMAIN NAMES
+IN SOCIAL MEDIA HANDLES
+IN CORPORATE NAMES
+IN REGISTERED BUSINESS IDENTIFIERS
+WITHOUT EXPLICIT WRITTEN PERMISSION.
+
+PROHIBITED USES
+THE FOLLOWING USES ARE STRICTLY PROHIBITED:
+
+IMPLYING ENDORSEMENT OR AFFILIATION
+MISREPRESENTING UNOFFICIAL BUILDS AS OFFICIAL
+USING THE MARKS IN A MISLEADING OR DECEPTIVE MANNER
+USING THE MARKS IN WAYS THAT DAMAGE REPUTATION OR GOODWILL
+REGISTERING CONFUSINGLY SIMILAR NAMES
+RESERVATION OF RIGHTS
+ALL RIGHTS NOT EXPRESSLY GRANTED IN THIS POLICY ARE RESERVED.
+
+FAILURE TO ENFORCE ANY PROVISION OF THIS POLICY SHALL NOT CONSTITUTE A WAIVER OF ANY RIGHTS.
+
+PROJECT TICK RESERVES THE RIGHT TO UPDATE THIS POLICY AT ANY TIME.
+
+CONTACT
+FOR PERMISSION REQUESTS OR QUESTIONS REGARDING TRADEMARK USE: 
+yongdohyun@projecttick.org
+
+*/
+
+/* Project Tick Enterprise Design - Professional Enterprise Style */
+:root {
+    /* Iconic Brand Identity v2.0 */
+    --pt-red: #FF003C;
+    --pt-red-hover: #D40032;
+    --pt-black: #0F0F0F;
+    --pt-black-900: #050505;
+    --pt-gray-100: #F0F0F0;
+    --pt-gray-200: #E0E0E0;
+    --pt-gray-300: #D2D2D2;
+    --pt-gray-500: #8A8D90;
+    --pt-gray-600: #6A6E73;
+    --pt-white: #FFFFFF;
+
+    /* Functional */
+    --text-primary: #151515;
+    --text-secondary: #6A6E73;
+    --link-color: #FF003C;
+    --link-hover-color: #D40032;
+    --border-color: #D2D2D2;
+
+    /* Layout */
+    --max-width: 1200px;
+    --header-height: 72px;
+
+    /* Fonts - Iconic Choice */
+    --font-display: "Space Grotesk", sans-serif;
+    --font-text: "Red Hat Text", sans-serif;
+
+    /* Utilities */
+    --pt-red-light: rgba(255, 0, 60, 0.05);
+}
+
+/* Dark Theme Variables */
+body.dark-theme {
+    --pt-white: #0F0F0F;
+    --pt-black: #FFFFFF;
+    --pt-black-900: #000000;
+    --pt-gray-100: #1A1A1A;
+    --pt-gray-200: #2A2A2A;
+    --pt-gray-300: #333333;
+    --pt-gray-500: #8A8D90;
+    --pt-gray-600: #A0A0A0;
+    --text-primary: #E0E0E0;
+    --text-secondary: #A0A0A0;
+    --border-color: #333333;
+    --card-bg: #151515;
+    --pt-red-light: rgba(255, 0, 60, 0.15);
+}
+
+body.dark-theme footer {
+    background-color: #050505;
+    border-top-color: var(--pt-red);
+}
+
+body.dark-theme .card,
+body.dark-theme .table {
+    background-color: #151515;
+    border-color: #333;
+}
+
+body.dark-theme .table td {
+    color: #E0E0E0;
+}
+
+body.dark-theme .form-control {
+    background-color: #1A1A1A;
+    border-color: #333;
+    color: white;
+}
+
+body.dark-theme .prose h1,
+body.dark-theme .prose h2,
+body.dark-theme .prose h3,
+body.dark-theme .prose h4 {
+    color: #FFFFFF !important;
+}
+
+body.dark-theme .prose p,
+body.dark-theme .prose li {
+    color: #E0E0E0 !important;
+}
+
+body.dark-theme .prose code {
+    background: rgba(255, 255, 255, 0.1);
+    color: #FF5F85;
+}
+
+body.dark-theme .infobox,
+body.dark-theme .notification {
+    background-color: #1A1A1A !important;
+    border-color: #333 !important;
+    color: #E0E0E0 !important;
+}
+
+body.dark-theme .infobox h1,
+body.dark-theme .infobox h2,
+body.dark-theme .infobox h3,
+body.dark-theme .prose li {
+    color: #FFFFFF !important;
+}
+
+
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-text);
+    color: var(--text-primary);
+    background-color: var(--pt-white);
+    line-height: 1.5;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+    color: var(--pt-black-900);
+}
+
+h1 {
+    font-size: 3.5rem;
+    letter-spacing: -0.02em;
+}
+
+h2 {
+    font-size: 2.5rem;
+    margin-top: 3.5rem;
+}
+
+h3 {
+    font-size: 1.75rem;
+    margin-top: 2.5rem;
+}
+
+p {
+    margin-bottom: 1.5rem;
+    max-width: 80ch;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+/* Navigation - Project Tick Style */
+.site-nav {
+    height: var(--header-height);
+    background-color: var(--pt-black-900);
+    color: var(--pt-white);
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+@media (max-width: 768px) {
+    .site-nav {
+        padding: 0 16px;
+        flex-wrap: wrap;
+        height: auto;
+        min-height: var(--header-height);
+    }
+}
+
+.site-nav .brand {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--pt-white);
+    margin-right: 48px;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+
+.site-nav-links {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+@media (max-width: 768px) {
+    .site-nav-links {
+        width: 100%;
+        flex-direction: column;
+        display: none;
+        /* Controlled by mobile toggle */
+        padding-bottom: 16px;
+    }
+
+    .site-nav-links.show {
+        display: flex;
+    }
+}
+
+.site-nav a:not(.brand) {
+    color: #D2D2D2;
+    margin-right: 24px;
+    font-size: 0.95rem;
+    font-family: var(--font-display);
+    font-weight: 500;
+    text-decoration: none;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-bottom: 4px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+@media (max-width: 768px) {
+    .site-nav a:not(.brand) {
+        margin-right: 0;
+        width: 100%;
+        padding: 12px 0;
+        border-bottom: 1px solid #333;
+    }
+}
+
+.site-nav a:not(.brand):hover,
+.site-nav a.active,
+.site-nav a:not(.brand):focus {
+    background: transparent !important;
+    border-bottom-color: var(--pt-red) !important;
+    outline: none !important;
+}
+
+/* Typography Resizing */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2.5rem;
+    }
+
+    h2 {
+        font-size: 1.8rem;
+    }
+
+    .hero h1 {
+        font-size: 2.8rem;
+    }
+}
+
+/* Container */
+.container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 32px;
+}
+
+/* Hero Section */
+.hero {
+    background-color: var(--pt-black-900);
+    color: var(--pt-white);
+    padding: 100px 0;
+    margin-bottom: 64px;
+}
+
+.hero h1 {
+    color: var(--pt-white);
+    font-size: 4rem;
+    margin-bottom: 24px;
+}
+
+.hero p {
+    font-size: 1.5rem;
+    color: #D2D2D2;
+    max-width: 800px;
+    margin-bottom: 48px;
+}
+
+/* Buttons - PatternFly Style */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 32px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-decoration: none !important;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 0;
+    /* Sharp corners are key to Project Tick */
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--pt-red);
+    color: var(--pt-white) !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--pt-red-hover);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--pt-black);
+    border: 1px solid var(--pt-black);
+}
+
+.btn-secondary:hover {
+    background-color: var(--pt-black);
+    color: var(--pt-white);
+}
+
+.btn-ghost {
+    background-color: transparent;
+    color: var(--link-color);
+    padding: 12px 0;
+}
+
+.btn-ghost:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+/* Cards & Grid */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 24px;
+    margin-bottom: 64px;
+}
+
+.card {
+    background: var(--pt-white);
+    padding: 32px;
+    border: 1px solid var(--pt-gray-300);
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: border-color 0.2s;
+}
+
+.card:hover {
+    border-color: var(--pt-gray-600);
+}
+
+.card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background-color: var(--pt-red);
+    transition: width 0.3s;
+}
+
+.card:hover::after {
+    width: 100%;
+}
+
+.card h3 {
+    margin-top: 0;
+    font-size: 1.5rem;
+}
+
+/* Tables */
+.table-container {
+    overflow-x: auto;
+    margin: 32px 0;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--pt-white);
+}
+
+.table th {
+    border-bottom: 2px solid var(--pt-gray-300);
+    color: var(--pt-black-900);
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-align: left;
+    padding: 16px;
+    font-size: 0.9rem;
+    background-color: var(--pt-gray-100);
+}
+
+.table td {
+    border-bottom: 1px solid var(--pt-gray-300);
+    padding: 16px;
+    vertical-align: top;
+}
+
+.table tr:hover {
+    background-color: var(--pt-gray-100);
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-label {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--pt-gray-300);
+    border-bottom: 2px solid var(--pt-gray-600);
+    /* Project Tick style focused bottom border */
+    font-family: var(--font-text);
+    font-size: 1rem;
+    border-radius: 0;
+}
+
+.form-control:focus {
+    outline: none;
+    border-bottom-color: var(--pt-red);
+}
+
+/* Footer */
+footer {
+    background-color: var(--pt-black-900);
+    color: #D2D2D2;
+    padding: 80px 0;
+    border-top: 8px solid var(--pt-red);
+}
+
+footer p {
+    text-align: center;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+footer a {
+    color: var(--pt-white);
+}
+
+/* Prose / Content Styling for Markdown/HTML */
+.prose {
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+.prose h1,
+.prose h2,
+.prose h3 {
+    font-family: var(--font-display);
+    color: var(--pt-black-900);
+    margin-top: 2.5rem;
+    margin-bottom: 1.25rem;
+    font-weight: 700;
+}
+
+.prose p {
+    margin-bottom: 1.25rem;
+}
+
+.prose ul,
+.prose ol {
+    margin-bottom: 1.5rem;
+    padding-left: 24px;
+}
+
+.prose li {
+    margin-bottom: 0.5rem;
+}
+
+.prose code {
+    background: rgba(255, 0, 60, 0.05);
+    color: var(--pt-red);
+    padding: 2px 6px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9em;
+    border-radius: 4px;
+}
+
+.prose pre {
+    background: #0D0D0D;
+    color: #E0E0E0;
+    padding: 24px;
+    overflow-x: auto;
+    margin-bottom: 2rem;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    border-radius: 8px;
+    border: 1px solid #1A1A1A;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.prose pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+    border-radius: 0;
+}
+
+/* Legacy Compatibility Styles (11ty) */
+.download-content {
+    padding: 40px 0;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+}
+
+.column {
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Legacy Button Compatibility */
+.button {
+    display: inline-block;
+    padding: 10px 24px;
+    background: var(--pt-red);
+    color: white !important;
+    text-decoration: none !important;
+    font-weight: bold;
+    margin: 8px 4px 8px 0;
+    transition: background 0.2s;
+}
+
+.button:hover {
+    background: var(--pt-red-hover);
+    text-decoration: none;
+}
+
+.button.size-large {
+    padding: 14px 32px;
+    font-size: 1.1rem;
+}
+
+/* Info & Notifications */
+.infobox {
+    background: #fafafa;
+    border: 1px solid #ddd;
+    padding: 32px;
+    margin: 40px 0;
+}
+
+.notification {
+    padding: 16px 24px;
+    margin: 16px 0;
+    border-left: 4px solid #ccc;
+}
+
+.notification.type-warn {
+    background: #fff8e1;
+    border-left-color: #ffc107;
+    color: #856404;
+}
+
+.notification.type-info {
+    background: #e3f2fd;
+    border-left-color: #2196f3;
+    color: #0d47a1;
+}
+
+/* --- Component: Hero Section --- */
+.hero-section {
+    padding: 60px 0;
+    background: var(--pt-black-900);
+    text-align: center;
+    color: var(--pt-white);
+    margin-bottom: 40px;
+    border-bottom: 4px solid var(--pt-red);
+}
+
+.hero-section h1 {
+    font-size: 3.5rem;
+    margin-bottom: 16px;
+    color: var(--pt-white);
+}
+
+.hero-section .lead {
+    font-size: 1.25rem;
+    color: var(--pt-gray-300);
+    max-width: 800px;
+    margin: 0 auto 32px;
+}
+
+/* --- Component: Badges --- */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.badge-pill {
+    border-radius: 16px;
+}
+
+.badge-outline {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: var(--pt-black);
+}
+
+.badge-dark {
+    background: var(--pt-black);
+    color: var(--pt-white);
+    font-family: monospace;
+}
+
+.badge-status-active {
+    background: rgba(46, 125, 50, 0.1);
+    color: #2E7D32;
+    border: 1px solid rgba(46, 125, 50, 0.2);
+}
+
+.badge-status-warn {
+    background: rgba(255, 193, 7, 0.1);
+    color: #B08D00;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.badge-status-danger {
+    background: rgba(198, 40, 40, 0.1);
+    color: #C62828;
+    border: 1px solid rgba(198, 40, 40, 0.2);
+}
+
+/* --- Component: Auth Pages --- */
+.auth-section {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 0;
+}
+
+.auth-card {
+    max-width: 480px;
+    width: 100%;
+    padding: 48px;
+    text-align: center;
+}
+
+/* --- Component: Handbook Tree & Sidebar --- */
+.nav-tree {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.nav-item {
+    margin-bottom: 4px;
+}
+
+.nav-link-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: var(--pt-gray-600);
+    font-size: 0.95rem;
+    display: block;
+    padding: 6px 12px;
+    width: 100%;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    background: var(--pt-gray-200);
+    color: var(--pt-red);
+}
+
+.nav-link.active {
+    background: var(--pt-red);
+    color: white;
+    font-weight: bold;
+}
+
+.nav-folder {
+    color: var(--pt-gray-500);
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 10px 12px 4px;
+    display: block;
+}
+
+.nav-tree .nav-tree {
+    padding-left: 16px;
+    border-left: 1px solid var(--pt-gray-200);
+    margin-left: 12px;
+}
+
+/* Utilities */
+.text-center {
+    text-align: center;
+}
+
+.mt-4 {
+    margin-top: 2rem;
+}
+
+.mb-4 {
+    margin-bottom: 2rem;
+}
+
+.py-5 {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.gap-4 {
+    gap: 1rem;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.font-monospace {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9rem;
+}
+
+/* --- Admin Panel Utilities --- */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.admin-header h1 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+.admin-breadcrumb {
+    font-size: 1.2rem;
+    color: var(--pt-gray-600);
+    font-weight: normal;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+}
+
+.admin-card-actions {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--pt-gray-200);
+    display: flex;
+    gap: 12px;
+}
+
+/* --- Component: Flash Messages --- */
+.flash {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.flash-success {
+    background: #E7F4E4;
+    border-color: #D3E7CD;
+    color: #1B5E20;
+}
+
+body.dark-theme .flash-success {
+    background: #1B3320;
+    border-color: #2E7D32;
+    color: #A5D6A7;
+}
+
+.flash-error,
+.flash-danger {
+    background: #FDF2F2;
+    border-color: #F8D7DA;
+    color: #B71C1C;
+}
+
+body.dark-theme .flash-error,
+body.dark-theme .flash-danger {
+    background: #331B1B;
+    border-color: #C62828;
+    color: #EF9A9A;
+}
+
+.flash-icon {
+    margin-right: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.flash-message {
+    flex: 1;
+    font-weight: 500;
+}
+
+.flash-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.5;
+    padding: 4px;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.flash-close:hover {
+    opacity: 1;
+}
+
+/* --- Luxury Refinements --- */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--pt-gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--pt-gray-300);
+    border-radius: 10px;
+    border: 2px solid var(--pt-gray-100);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--pt-gray-500);
+}
+
+body.dark-theme ::-webkit-scrollbar-track {
+    background: var(--pt-black-900);
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb {
+    background: #333;
+    border-color: var(--pt-black-900);
+}
+
+/* --- Form Styles --- */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--pt-black);
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--pt-black);
+    background-color: var(--pt-white);
+    background-clip: padding-box;
+    border: 1px solid var(--pt-gray-300);
+    border-radius: 4px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: var(--pt-red);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(238, 0, 0, 0.25);
+}
+
+.form-help {
+    font-size: 0.85rem;
+    color: var(--pt-gray-600);
+    margin-top: 6px;
+}
+
+.form-error {
+    color: #C62828;
+    font-size: 0.875rem;
+    margin-top: 4px;
+}
+
+/* --- Targeted Dark Mode Fixes (Non-Destructive) --- */
+body.dark-theme {
+    background-color: #0A0A0A;
+}
+
+/* Fix Hero/Header visibility across templates */
+body.dark-theme .hero-section,
+body.dark-theme .hero,
+body.dark-theme [style*="background: var(--pt-black)"],
+body.dark-theme [style*="background-color: var(--pt-black-900)"] {
+    background-color: #000000 !important;
+}
+
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme h5,
+body.dark-theme h6,
+body.dark-theme .hero-section h1,
+body.dark-theme .hero h1 {
+    color: #FFFFFF !important;
+}
+
+body.dark-theme .hero-section .lead,
+body.dark-theme .hero p,
+body.dark-theme [style*="color: #D2D2D2"],
+body.dark-theme p {
+    color: #D2D2D2 !important;
+}
+
+/* Fix Search Input visibility */
+body.dark-theme input[type="text"][placeholder*="Search"],
+body.dark-theme .search-container input {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border: 1px solid #333 !important;
+}
+
+/* Fix Footer contrast */
+body.dark-theme footer {
+    background-color: #050505 !important;
+    border-top: 8px solid var(--pt-red) !important;
+}
+
+body.dark-theme footer a,
+body.dark-theme footer p {
+    color: #A0A0A0 !important;
+}
+
+/* Admin/Card consistency */
+body.dark-theme .card,
+body.dark-theme .card h3 {
+    background-color: #151515 !important;
+    color: #FFFFFF !important;
+}
+
+body.dark-theme .table td {
+    color: #E0E0E0;
+}

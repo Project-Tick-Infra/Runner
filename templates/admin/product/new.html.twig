@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}New Product - Admin{% endblock %}
+
+{% block body %}
+    <h1 style="margin-bottom: 24px;">Create New Product</h1>
+
+    <div class="card" style="max-width: 800px; margin: 0 auto;">
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            
+            <div class="admin-card-actions">
+                <button class="btn btn-primary">{{ button_label|default('Save Product') }}</button>
+                <a href="{{ path('app_admin_products_index') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        {{ form_end(form) }}
+    </div>
+    
+    <script>
+        // Simple JS to handle CollectionType adding if needed
+        // For now, reliance on standard form handling or user can manage simple text inputs
+        // A more complex implementation would require stimulus controller
+    </script>
+{% endblock %}

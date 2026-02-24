@@ -1,0 +1,15 @@
+<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-top: 4px solid #ee0000;">
+    <h2 style="color: #333;">Confirm CLA Signature</h2>
+    <p>Hi {{ user.fullName }},</p>
+    <p>Thank you for signing the Project Tick CLA ({{ version }}).</p>
+    <p>To complete the process, please click the button below to verify your signature:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{{ confirmUrl }}" style="background-color: #ee0000; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Verify Signature</a>
+    </div>
+
+    <p style="color: #666; font-size: 0.9rem;">Signature SHA: <code>{{ sha }}</code></p>
+    <p style="color: #666; font-size: 0.9rem;">If you did not sign this document, please ignore this email.</p>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+    <p style="color: #999; font-size: 0.8rem;">Project Tick Ecosystem<br>projecttick.org</p>
+</div>

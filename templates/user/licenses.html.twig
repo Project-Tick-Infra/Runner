@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Licenses - Project Tick{% endblock %}
+
+{% block body %}
+    <h1>My Licenses & Agreements</h1>
+    <p class="lead">Manage your software licenses and contributor agreements.</p>
+
+    <div class="grid" style="margin-top: 40px; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px;">
+        {% for license in user_licenses %}
+            <div class="card" style="padding: 24px; border-top: 4px solid var(--primary-color);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.25rem;">{{ license.license.name }}</h3>
+                        <p style="margin: 4px 0; color: var(--text-secondary); font-size: 0.9rem;">{{ license.license.spdxIdentifier }}</p>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <p style="margin: 4px 0;"><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+                    <p style="margin: 4px 0;"><strong>Signed:</strong> {{ license.signedAt|date('d M Y') }}</p>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <a href="{{ path('app_license_view', {slug: license.license.slug}) }}" class="btn btn-sm btn-outline-primary">Terms</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 60px;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">Contributor License Agreements (CLA)</h2>
+        <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px;">
+            {% for cla in app.user.claSignatures %}
+                <div class="card" style="padding: 24px; border-left: 4px solid {{ cla.isVerified ? '#28a745' : '#ffc107' }};">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.1rem;">{{ site_setting('cla_title', 'Project Tick CLA') }}</h3>
+                            <span class="badge {{ cla.isVerified ? 'bg-success' : 'bg-warning text-dark' }}" style="font-size: 0.7rem;">
+                                {{ cla.isVerified ? 'Verified' : 'Pending Verification' }}
+                            </span>
+                        </div>
+                        <span style="font-size: 0.8rem; color: #888;">v{{ cla.version }}</span>
+                    </div>
+
+                    <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                        <p style="margin: 4px 0;"><strong>Signed on:</strong> {{ cla.signedAt|date('d M Y, H:i') }}</p>
+                        {% if cla.verifiedAt %}
+                            <p style="margin: 4px 0;"><strong>Verified on:</strong> {{ cla.verifiedAt|date('d M Y, H:i') }}</p>
+                        {% endif %}
+                        <p style="margin: 4px 10px 4px 0; word-break: break-all;"><strong>EVENT_SHA:</strong> <code style="font-size: 0.75rem;">{{ cla.sha|default('N/A') }}</code></p>
+                        
+                        {% if cla.signatureImage %}
+                            <div class="signature-record" style="margin-top: 20px; padding: 20px; background: #fff; border: 1px solid #ddd; box-shadow: 0 4px 15px rgba(0,0,0,0.1); color: #000; font-family: 'Times New Roman', serif; position: relative; border-radius: 4px;">
+                                <div style="position: absolute; top: 0; right: 0; padding: 10px; font-size: 10px; color: #ccc; font-family: sans-serif; letter-spacing: 1px;">OFFICIAL_DIGITAL_RECORD</div>
+                                <div style="border: 2px solid #f0f0f0; padding: 20px;">
+                                    <div style="font-size: 10px; color: #aaa; margin-bottom: 5px; font-family: sans-serif; text-transform: uppercase;">Authenticated via Digital Ritual</div>
+                                    <p style="font-size: 12px; margin-bottom: 2px;">Signer Identity:</p>
+                                    <p style="font-size: 20px; font-weight: bold; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px;">{{ cla.signerName|default(app.user.githubUsername) }}</p>
+                                    
+                                    <div style="font-size: 10px; color: #888; margin-top: -10px; margin-bottom: 15px;">
+                                        GH_BIND: @{{ cla.githubUsername }} &nbsp;|&nbsp; 
+                                        {% if cla.gitlabUsername %}
+                                            GL_BIND: @{{ cla.gitlabUsername }}
+                                        {% else %}
+                                            GL_BIND: <span style="color: #c00;">NOT_BOUND</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div style="margin: 15px 0;">
+                                        <img src="{{ cla.signatureImage }}" style="max-width: 240px; height: auto; display: block; filter: contrast(120%) grayscale(100%) multiply(1.1);">
+                                    </div>
+                                    
+                                    <p style="font-size: 11px; font-style: italic; color: #555; margin-top: 15px; font-family: monospace; line-height: 1.4; background: #f9f9f9; padding: 10px; border-left: 3px solid #eee;">
+                                        "I, {{ (cla.signerName|default(app.user.githubUsername))|upper }}, HEREBY ASSIGN AND TRANSFER ALL RIGHT, TITLE, AND INTEREST IN AND TO MY CONTRIBUTIONS UNDER PROJECT TICK CLA {{ cla.version }}"
+                                    </p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div style="margin-top: 20px; display: flex; gap: 10px;">
+                        <a href="{{ path('app_user_cla_view', {slug: cla.version}) }}" class="btn btn-sm btn-outline-primary" style="font-size: 0.8rem;">View Terms</a>
+                        {% if cla.isVerified %}
+                            <a href="{{ path('app_user_cla_print', {id: cla.id}) }}" class="btn btn-sm btn-primary" style="font-size: 0.8rem;">View & Download PDF</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: #888; font-style: italic;">
+                    No CLA signatures found.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

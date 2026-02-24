@@ -1,0 +1,59 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Version Comparison | Automation Hub{% endblock %}
+
+{% block body %}
+<div class="py-5" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px;">
+        <div>
+            <h1>Version <span style="color:#EE0000">Comparison</span></h1>
+            <p>Compare tags, branches or commits across repositories.</p>
+        </div>
+        <a href="{{ path('app_admin_bot_index') }}" class="btn btn-secondary">&larr; Back to Hub</a>
+    </div>
+
+    <div style="background: white; border-radius: 20px; border: 1px solid #eee; padding: 30px; margin-bottom: 40px;">
+        <form action="{{ path('app_admin_bot_diff') }}" method="GET" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 20px; align-items: flex-end;">
+            <div class="form-group">
+                <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 8px;">REPOSITORY</label>
+                <select name="repo" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-weight: 600;">
+                    <option value="Project-Tick/ProjT-Launcher" {% if repo == 'Project-Tick/ProjT-Launcher' %}selected{% endif %}>ProjT-Launcher</option>
+                    <option value="Project-Tick/ProjT-website" {% if repo == 'Project-Tick/ProjT-website' %}selected{% endif %}>ProjT-website</option>
+                    <option value="Project-Tick/ProjT-OS" {% if repo == 'Project-Tick/ProjT-OS' %}selected{% endif %}>ProjT-OS</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 8px;">BASE (e.g. 0.0.3-1)</label>
+                <input type="text" name="base" value="{{ base }}" placeholder="Old version/tag" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+            <div class="form-group">
+                <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 8px;">HEAD (e.g. 0.0.4-2)</label>
+                <input type="text" name="head" value="{{ head }}" placeholder="New version/tag" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 12px 30px;">COMPARE</button>
+        </form>
+    </div>
+
+    {% if diff %}
+    <div class="diff-container" style="background: #0D1117; border-radius: 20px; border: 1px solid #30363D; overflow: hidden;">
+        <div style="background: #161B22; padding: 15px 25px; border-bottom: 1px solid #30363D; display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #E6EDF3; font-family: monospace; font-size: 0.9rem;">Comparing {{ base }}...{{ head }}</span>
+        </div>
+        <pre style="margin: 0; padding: 25px; color: #E6EDF3; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.6; overflow-x: auto; white-space: pre-wrap;">{{ diff }}</pre>
+    </div>
+    {% elseif base and head %}
+    <div style="text-align: center; padding: 60px; background: #fafafa; border-radius: 20px;">
+        <p style="color: #999;">No differences found or invalid versions provided.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Basic Diff Coloring - Note: This is an approximation since it's a raw pre */
+    pre {
+        color: #E6EDF3;
+    }
+    /* Simple CSS trick to highlight diff lines if they start with + or - */
+    /* This only works if we were to wrap lines, but here we just show raw */
+</style>
+{% endblock %}

@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Project Tick
+# SPDX-FileContributor: Project Tick
+#
+# Copyright (c) 2026 Project Tick
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+COMMAND=$1
+SERVICE=${2:-all}
+
+function show_help() {
+    echo -e "\e[34m"
+    echo "  Project Tick Control"
+    echo -e "\e[0m"
+    echo "Usage: projecttick-ctl [command] [service]"
+    echo ""
+    echo "Commands:"
+    echo "  start         Start services"
+    echo "  stop          Stop services"
+    echo "  restart       Restart services"
+    echo "  status        Show status of services"
+    echo "  tail          Tail logs for services"
+    echo "  reconfigure   Reconfigure the environment settings"
+    echo ""
+    echo "Services: nginx, php-fpm, mariadb, all (default)"
+    echo ""
+}
+
+if [ -z "$COMMAND" ]; then
+    show_help
+    exit 1
+fi
+
+case "$COMMAND" in
+    start|stop|restart|status)
+        echo "Running '$COMMAND' for service: $SERVICE..."
+        if [ "$SERVICE" == "all" ]; then
+            systemctl $COMMAND projt-nginx projt-php-fpm projt-mariadb
+        else
+            systemctl $COMMAND projt-$SERVICE
+        fi
+        ;;
+    tail)
+        echo "Tailing logs for $SERVICE... (Press Ctrl+C to exit)"
+        if [ "$SERVICE" == "all" ]; then
+            tail -f /var/log/projt-nginx*.log /var/log/projt-php-fpm.log /opt/projt-portal/var/log/prod.log
+        elif [ "$SERVICE" == "nginx" ]; then
+            tail -f /var/log/projt-nginx*.log
+        elif [ "$SERVICE" == "php-fpm" ]; then
+            tail -f /var/log/projt-php-fpm.log
+        elif [ "$SERVICE" == "mariadb" ]; then
+            tail -f /opt/projt-portal/mariadb/data/*.err
+        else
+            echo "Unknown service for tail."
+        fi
+        ;;
+    reconfigure)
+        echo "Reconfiguring Project Tick System..."
+        if [ -f "/opt/projt-portal/setup_rhel.sh" ]; then
+            # Run without interactive prompts to just re-apply configs
+            /opt/projt-portal/setup_rhel.sh -a
+        else
+            echo "Error: setup_rhel.sh not found."
+        fi
+        ;;
+    *)
+        show_help
+        ;;
+esac

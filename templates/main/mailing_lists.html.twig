@@ -1,0 +1,120 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mailing Lists - Project Tick{% endblock %}
+
+{% block body %}
+<div class="mailing-lists-hero" style="background: var(--pt-gray-100); padding: 100px 0; border-bottom: 1px solid var(--border-color); position: relative; overflow: hidden;">
+    <div style="position: absolute; top: -50px; right: 0; opacity: 0.03; font-family: var(--font-display); font-size: 20rem; font-weight: 900; line-height: 1; pointer-events: none; user-select: none;">
+        MAIL
+    </div>
+
+    <div class="container" style="position: relative; z-index: 2;">
+        <div style="max-width: 800px;">
+            <div style="display: inline-block; background: #EE0000; color: white; padding: 6px 16px; font-weight: 800; font-family: var(--font-display); font-size: 0.75rem; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.1em;">
+                Communication
+            </div>
+            <h1 style="font-family: var(--font-display); font-size: 4rem; font-weight: 900; line-height: 1.1; margin-bottom: 24px; color: #111; letter-spacing: -0.04em;">
+                Stay Connected via <br><span style="color: #EE0000;">Mailing Lists</span>
+            </h1>
+            <p style="font-size: 1.25rem; color: #555; line-height: 1.6; margin-bottom: 40px; font-family: var(--font-text);">
+                Project Tick uses mailing lists for structured, transparent, and asynchronous communication.
+                Each list has a clearly defined purpose to keep discussions focused and productive.
+            </p>
+            <a href="https://lists.projecttick.org" class="btn btn-primary" style="padding: 16px 40px; font-size: 1rem; border-radius: 4px; font-weight: 800; text-transform: uppercase;">
+                Browse Lists & Archives
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container" style="padding: 80px 0;">
+    <div style="max-width: 900px; margin: 0 auto;">
+        <h2 style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; margin-bottom: 48px; border-left: 6px solid #EE0000; padding-left: 24px;">
+            Mailing Lists
+        </h2>
+
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+
+            {# Announce #}
+            <div class="mailing-list-card" style="background: var(--pt-white); border: 1px solid var(--border-color); padding: 32px; display: flex; align-items: center; justify-content: space-between; gap: 32px; border-radius: 8px;">
+                <div style="flex: 1;">
+                    <div style="font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; margin-bottom: 8px;">
+                        Announcements
+                    </div>
+                    <p style="color: #666; margin: 0;">
+                        Official project announcements, release notices, security advisories, and important updates.
+                        Low traffic, read-only for most subscribers.
+                    </p>
+                </div>
+                <a href="https://lists.projecttick.org" style="color: #EE0000; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Visit announce list
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+
+            {# Development #}
+            <div class="mailing-list-card" style="background: var(--pt-white); border: 1px solid var(--border-color); padding: 32px; display: flex; align-items: center; justify-content: space-between; gap: 32px; border-radius: 8px;">
+                <div style="flex: 1;">
+                    <div style="font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; margin-bottom: 8px;">
+                        Development
+                    </div>
+                    <p style="color: #666; margin: 0;">
+                        Technical discussions, patches, RFCs, architectural decisions, and infrastructure topics
+                        related to Project Tick development.
+                    </p>
+                </div>
+                <a href="https://lists.projecttick.org" style="color: #EE0000; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Visit devel list
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+
+            {# Community #}
+            <div class="mailing-list-card" style="background: var(--pt-white); border: 1px solid var(--border-color); padding: 32px; display: flex; align-items: center; justify-content: space-between; gap: 32px; border-radius: 8px;">
+                <div style="flex: 1;">
+                    <div style="font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; margin-bottom: 8px;">
+                        Community
+                    </div>
+                    <p style="color: #666; margin: 0;">
+                        General community discussions, questions, ideas, feedback, and coordination.
+                        This is the right place to start if you are new to Project Tick.
+                    </p>
+                </div>
+                <a href="https://lists.projecttick.org" style="color: #EE0000; font-weight: 800; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                    Visit community list
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body.dark-theme .mailing-lists-hero {
+        background: #050505 !important;
+        border-color: #222 !important;
+    }
+    body.dark-theme .mailing-lists-hero h1 {
+        color: white !important;
+    }
+    body.dark-theme .mailing-lists-hero p {
+        color: #888 !important;
+    }
+    body.dark-theme .container div[style*="background: white"] {
+        background: #111 !important;
+        border-color: #222 !important;
+    }
+    body.dark-theme .container h2,
+    body.dark-theme .container div[style*="font-weight: 800"] {
+        color: white !important;
+    }
+</style>
+{% endblock %}
+
