@@ -1,0 +1,43 @@
+#!/bin/bash
+
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# ENSURE DOWNWARD COMPATIBILITY
+#=================================================
+ynh_script_progression "Ensuring backward compatibility..."
+
+ynh_app_setting_set_default --key=domain --value="$domain"
+ynh_app_setting_set_default --key=admin_ssh_key_file --value="$admin_ssh_key_file"
+ynh_app_setting_set_default --key=fcgiwrap_socket --value="/run/fcgiwrap.socket"
+ynh_app_setting_set_default --key=fcgiwrap_user --value="www-data"
+ynh_app_setting_set_default --key=git_http_backend --value="/usr/lib/git-core/git-http-backend"
+ynh_app_setting_set_default --key=cgit_web_root --value="$cgit_web_root"
+ynh_app_setting_set_default --key=cgit_cgi_path --value="$cgit_cgi_path"
+ynh_app_setting_set_default --key=cgit_config_path --value="$cgit_config_path"
+ynh_app_setting_set_default --key=repositories_dir --value="$repositories_dir"
+
+#=================================================
+# UPGRADE SOURCES AND DATA LAYOUT
+#=================================================
+setup_sources "upgrade"
+setup_data_layout
+save_admin_ssh_key
+prepare_web_runtime
+
+#=================================================
+# REAPPLY NGINX CONFIGURATION
+#=================================================
+ynh_script_progression "Reapplying NGINX configuration..."
+ynh_config_add_nginx
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression "Upgrade of $app completed"

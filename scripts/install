@@ -1,0 +1,34 @@
+#!/bin/bash
+
+#=================================================
+# IMPORT GENERIC HELPERS
+#=================================================
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# STORE CUSTOM SETTINGS
+#=================================================
+ynh_app_setting_set --key=domain --value="$domain"
+ynh_app_setting_set --key=admin_ssh_key_file --value="$admin_ssh_key_file"
+
+#=================================================
+# DEPLOY SOURCES AND DATA LAYOUT
+#=================================================
+setup_sources "install"
+setup_data_layout
+save_admin_ssh_key
+prepare_web_runtime
+
+#=================================================
+# NGINX CONFIGURATION
+#=================================================
+ynh_script_progression "Configuring NGINX..."
+ynh_config_add_nginx
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+
+ynh_script_progression "Installation of $app completed"
