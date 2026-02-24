@@ -1,0 +1,80 @@
+import type {
+  RenovateConfig,
+  ValidationMessage,
+} from '../../../../config/types.ts';
+import type {
+  LookupUpdate,
+  RangeConfig,
+} from '../../../../modules/manager/types.ts';
+import type { SkipReason } from '../../../../types/index.ts';
+import type { MergeConfidence } from '../../../../util/merge-confidence/types.ts';
+import type { Timestamp } from '../../../../util/timestamp.ts';
+
+export interface FilterConfig {
+  allowedVersions?: string;
+  depName?: string;
+  followTag?: string;
+  ignoreDeprecated?: boolean;
+  ignoreUnstable?: boolean;
+  maxMajorIncrement?: number;
+  respectLatest?: boolean;
+  updatePinnedDependencies?: boolean;
+  versioning?: string;
+}
+
+export interface RollbackConfig {
+  currentValue?: string;
+  depName?: string;
+  packageFile?: string;
+  versioning?: string;
+}
+
+export interface LookupUpdateConfig
+  extends RollbackConfig,
+    FilterConfig,
+    RangeConfig,
+    RenovateConfig {
+  currentVersion?: string;
+
+  digestOneAndOnly?: boolean;
+  rollbackPrs?: boolean;
+  currentDigest?: string;
+  lockedVersion?: string;
+  isVulnerabilityAlert?: boolean;
+  datasource: string;
+  packageName: string;
+  minimumConfidence?: MergeConfidence | undefined;
+  replacementName?: string;
+  replacementNameTemplate?: string;
+  replacementVersion?: string;
+  replacementVersionTemplate?: string;
+  extractVersion?: string;
+  vulnerabilityFixVersion?: string;
+  vulnerabilityFixStrategy?: string;
+  abandonmentThreshold?: string;
+}
+
+export interface UpdateResult {
+  sourceDirectory?: string;
+  changelogContent?: string;
+  changelogUrl?: string;
+  dependencyUrl?: string;
+  homepage?: string;
+  deprecationMessage?: string;
+  sourceUrl?: string | null;
+  currentVersion?: string;
+  isSingleVersion?: boolean;
+  lookupName?: string;
+  skipReason?: SkipReason;
+  registryUrl?: string;
+  fixedVersion?: string;
+  updates: LookupUpdate[];
+  warnings: ValidationMessage[];
+  versioning?: string;
+  currentVersionAgeInDays?: number;
+  currentVersionTimestamp?: string;
+  vulnerabilityFixVersion?: string;
+  vulnerabilityFixStrategy?: string;
+  mostRecentTimestamp?: Timestamp | null;
+  isAbandoned?: boolean;
+}

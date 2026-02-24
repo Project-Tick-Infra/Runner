@@ -1,0 +1,24 @@
+name: 'Find issues with missing labels'
+
+on:
+  schedule:
+    # Run every Sunday at midnight
+    - cron: '0 0 * * 0'
+
+permissions: {}
+
+jobs:
+  check-unlabeled-issues:
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Search for issues with missing labels
+        run: bash ./tools/find-issues-with-missing-labels.sh

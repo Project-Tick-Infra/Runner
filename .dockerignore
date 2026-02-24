@@ -1,0 +1,9 @@
+*
+!tools/docker/bin
+!dist/
+!package.json
+!pnpm-lock.yaml
+!patches/
+!renovate-schema.json
+!license
+!.npmrc
