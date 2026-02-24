@@ -780,12 +780,12 @@ six = "*"
 
 [[package]]
 name = "lottie"
-version = "0.7.1"
+version = "0.7.2"
 description = "A framework to work with lottie files and telegram animated stickers (tgs)"
 optional = false
 python-versions = ">=3"
 files = [
-    {file = "lottie-0.7.1.tar.gz", hash = "sha256:21fd39c8e68bb1f043bd5c669c3c60c70a9cde59028d35bc615ddef92f42536a"},
+    {file = "lottie-0.7.2.tar.gz", hash = "sha256:85304ac152cd042c9fe98a527b5d136a31c6fe2aacd859ce1c58189bb946d127"},
 ]
 
 [package.dependencies]
