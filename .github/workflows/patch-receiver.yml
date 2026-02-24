@@ -1,6 +1,6 @@
 # Patch Receiver Workflow
 # This workflow is triggered by the Project Tick GitLab Bridge.
-# It receives MR coordinates, fetches the patch from GitLab, applies it, and runs CI.
+# It downloads the project source from GitLab, applies the MR patch, and runs CI.
 #
 # Place this file at: .github/workflows/patch-receiver.yml
 # Required Secrets: GL_BRIDGE_TOKEN (GitLab API token with read access)
@@ -42,39 +42,97 @@ on:
 jobs:
   receive-and-evaluate:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
       - name: "📋 Print Job Info"
         run: |
+          echo "============================================"
           echo "🔗 GitLab Project: ${{ inputs.gitlab_project_path }}"
           echo "🔀 MR: !${{ inputs.gitlab_mr_iid }}"
           echo "🔖 SHA: ${{ inputs.gitlab_sha }}"
           echo "🌿 Branch: ${{ inputs.gitlab_branch }} -> ${{ inputs.gitlab_target_branch }}"
           echo "📦 Context: ${{ inputs.context_prefix }}"
+          echo "============================================"
 
-      - name: "⬇️ Download Patch from GitLab"
+      - name: "⬇️ Download Project Source from GitLab (target branch)"
         env:
           GL_TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}
         run: |
-          PATCH_URL="https://gitlab.com/${{ inputs.gitlab_project_path }}/-/merge_requests/${{ inputs.gitlab_mr_iid }}.diff"
+          # Download the target branch as a tarball from GitLab
+          ARCHIVE_URL="https://gitlab.com/api/v4/projects/${{ inputs.gitlab_project_id }}/repository/archive.tar.gz?sha=${{ inputs.gitlab_target_branch }}"
           
-          echo "Downloading patch from: $PATCH_URL"
+          echo "📥 Downloading source archive from target branch: ${{ inputs.gitlab_target_branch }}"
+          echo "   URL: $ARCHIVE_URL"
+          
+          HTTP_CODE=$(curl -s -o /tmp/source.tar.gz -w "%{http_code}" \
+            -H "PRIVATE-TOKEN: $GL_TOKEN" \
+            "$ARCHIVE_URL")
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Failed to download source archive (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+          
+          ARCHIVE_SIZE=$(stat -c%s /tmp/source.tar.gz 2>/dev/null || stat -f%z /tmp/source.tar.gz 2>/dev/null || echo "0")
+          echo "📦 Archive size: $(numfmt --to=iec $ARCHIVE_SIZE 2>/dev/null || echo ${ARCHIVE_SIZE} bytes)"
+          
+          # Extract into workspace
+          mkdir -p $GITHUB_WORKSPACE/project
+          tar -xzf /tmp/source.tar.gz -C $GITHUB_WORKSPACE/project --strip-components=1
+          rm /tmp/source.tar.gz
+          
+          echo "✅ Source extracted successfully"
+          echo "📂 Top-level contents:"
+          ls -la $GITHUB_WORKSPACE/project/ | head -20
+          
+          # Initialize git repo for patch application
+          cd $GITHUB_WORKSPACE/project
+          git init
+          git add -A
+          git config user.name "Project Tick Bridge"
+          git config user.email "bridge@projecttick.org"
+          git commit -m "Base: ${{ inputs.gitlab_target_branch }}" --quiet
+
+      - name: "⬇️ Download MR Patch from GitLab"
+        env:
+          GL_TOKEN: ${{ secrets.GL_BRIDGE_TOKEN }}
+        run: |
+          # Download the MR diff
+          DIFF_URL="https://gitlab.com/${{ inputs.gitlab_project_path }}/-/merge_requests/${{ inputs.gitlab_mr_iid }}.diff"
+          
+          echo "📥 Downloading MR patch..."
+          echo "   URL: $DIFF_URL"
           
           HTTP_CODE=$(curl -s -o /tmp/mr.diff -w "%{http_code}" \
             -H "PRIVATE-TOKEN: $GL_TOKEN" \
-            "$PATCH_URL")
+            "$DIFF_URL")
           
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "❌ Failed to download patch (HTTP $HTTP_CODE)"
-            # Try API endpoint as fallback
-            API_URL="https://gitlab.com/api/v4/projects/${{ inputs.gitlab_project_id }}/merge_requests/${{ inputs.gitlab_mr_iid }}/changes"
-            echo "Trying API fallback: $API_URL"
-            curl -s -H "PRIVATE-TOKEN: $GL_TOKEN" "$API_URL" | jq -r '.changes[]? | "--- a/\(.old_path)\n+++ b/\(.new_path)\n\(.diff)"' > /tmp/mr.diff || true
+            echo "⚠️ .diff endpoint failed (HTTP $HTTP_CODE), trying .patch format..."
+            PATCH_URL="https://gitlab.com/${{ inputs.gitlab_project_path }}/-/merge_requests/${{ inputs.gitlab_mr_iid }}.patch"
+            HTTP_CODE=$(curl -s -o /tmp/mr.diff -w "%{http_code}" \
+              -H "PRIVATE-TOKEN: $GL_TOKEN" \
+              "$PATCH_URL")
+          fi
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "⚠️ Direct download failed, trying API endpoint..."
+            API_URL="https://gitlab.com/api/v4/projects/${{ inputs.gitlab_project_id }}/merge_requests/${{ inputs.gitlab_mr_iid }}/diffs"
+            curl -s -H "PRIVATE-TOKEN: $GL_TOKEN" "$API_URL" > /tmp/mr_diffs.json
+            
+            # Convert API response to unified diff format
+            python3 -c "
+          import json, sys
+          with open('/tmp/mr_diffs.json') as f:
+              diffs = json.load(f)
+          for d in diffs:
+              print(d.get('diff', ''))
+          " > /tmp/mr.diff 2>/dev/null || echo "API conversion failed"
           fi
           
           PATCH_SIZE=$(stat -c%s /tmp/mr.diff 2>/dev/null || stat -f%z /tmp/mr.diff 2>/dev/null || echo "0")
-          echo "📦 Patch size: ${PATCH_SIZE} bytes"
+          echo "📦 Patch size: $(numfmt --to=iec $PATCH_SIZE 2>/dev/null || echo ${PATCH_SIZE} bytes)"
           
           if [ "$PATCH_SIZE" -lt 10 ]; then
             echo "❌ Patch is empty or too small"
@@ -82,7 +140,6 @@ jobs:
           fi
           
           echo "✅ Patch downloaded successfully"
-          head -50 /tmp/mr.diff
 
       - name: "📊 Patch Statistics"
         run: |
@@ -92,54 +149,79 @@ jobs:
           echo "Lines removed: $(grep -c '^-[^-]' /tmp/mr.diff || echo 0)"
           echo "Total lines:   $(wc -l < /tmp/mr.diff)"
 
-      - name: "🔍 Checkout Base Repository"
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 1
-
       - name: "🩹 Apply Patch"
         id: apply_patch
+        working-directory: ${{ github.workspace }}/project
         run: |
-          # Create evaluation branch
-          EVAL_BRANCH="eval-mr-${{ inputs.gitlab_mr_iid }}-$(echo ${{ inputs.gitlab_sha }} | cut -c1-8)"
-          git checkout -b "$EVAL_BRANCH"
+          echo "🩹 Applying patch to project source..."
           
-          # Try to apply the patch
+          # Try clean apply first
           if git apply --check /tmp/mr.diff 2>/dev/null; then
             git apply /tmp/mr.diff
-            echo "status=applied" >> $GITHUB_OUTPUT
+            echo "status=clean" >> $GITHUB_OUTPUT
             echo "✅ Patch applied cleanly"
+          elif git apply --check --3way /tmp/mr.diff 2>/dev/null; then
+            git apply --3way /tmp/mr.diff
+            echo "status=3way" >> $GITHUB_OUTPUT
+            echo "✅ Patch applied with 3-way merge"
           else
-            echo "⚠️ Clean apply failed, trying with --3way"
-            if git apply --3way /tmp/mr.diff 2>/dev/null; then
-              echo "status=applied-3way" >> $GITHUB_OUTPUT
-              echo "✅ Patch applied with 3-way merge"
-            else
-              echo "⚠️ 3-way failed too, trying with --reject"
-              git apply --reject /tmp/mr.diff 2>/dev/null || true
-              echo "status=applied-with-rejects" >> $GITHUB_OUTPUT
-              echo "⚠️ Patch applied with some rejects"
-              # List reject files
+            echo "⚠️ Standard apply failed, trying relaxed mode..."
+            git apply --reject --whitespace=fix /tmp/mr.diff 2>/dev/null || true
+            
+            REJECTS=$(find . -name "*.rej" -type f 2>/dev/null | wc -l)
+            if [ "$REJECTS" -gt 0 ]; then
+              echo "⚠️ $REJECTS reject file(s) found:"
               find . -name "*.rej" -type f 2>/dev/null | head -20
+              echo "status=partial" >> $GITHUB_OUTPUT
+            else
+              echo "status=applied" >> $GITHUB_OUTPUT
             fi
           fi
           
-          echo "branch=$EVAL_BRANCH" >> $GITHUB_OUTPUT
-
-      - name: "📝 Commit Changes"
-        if: steps.apply_patch.outputs.status != ''
-        run: |
-          git config user.name "Project Tick Bridge"
-          git config user.email "bridge@projecttick.org"
+          # Commit the patched state
           git add -A
-          git commit -m "eval: MR !${{ inputs.gitlab_mr_iid }} from ${{ inputs.gitlab_project_path }}
+          git commit -m "MR !${{ inputs.gitlab_mr_iid }}: ${{ inputs.gitlab_branch }} -> ${{ inputs.gitlab_target_branch }}
 
-          Source: ${{ inputs.gitlab_branch }}
-          Target: ${{ inputs.gitlab_target_branch }}
+          Project: ${{ inputs.gitlab_project_path }}
           SHA: ${{ inputs.gitlab_sha }}
-          Context: ${{ inputs.context_prefix }}
-          Apply-Status: ${{ steps.apply_patch.outputs.status }}" || echo "No changes to commit"
+          Apply-Status: $(cat $GITHUB_OUTPUT | grep status | cut -d= -f2)" --quiet || echo "No changes to commit"
+
+      - name: "🔍 Show Changes Summary"
+        working-directory: ${{ github.workspace }}/project
+        run: |
+          echo "=== Applied Changes ==="
+          git log --oneline -2
+          echo ""
+          echo "=== Files Modified ==="
+          git diff --stat HEAD~1..HEAD 2>/dev/null || echo "No diff available"
+
+      # ────────────────────────────────────────────────────
+      # CI / Evaluation Steps
+      # Add your project-specific CI steps below.
+      # The project source with the MR patch applied is in:
+      #   ${{ github.workspace }}/project/
+      # ────────────────────────────────────────────────────
+
+      - name: "🏗️ Evaluate Build (Placeholder)"
+        working-directory: ${{ github.workspace }}/project
+        run: |
+          echo "=== Build Evaluation ==="
+          echo "Project: ${{ inputs.gitlab_project_path }}"
+          echo "MR: !${{ inputs.gitlab_mr_iid }}"
+          echo "Status: ${{ steps.apply_patch.outputs.status }}"
+          echo ""
+          echo "TODO: Add project-specific build/test commands here."
+          echo "For example:"
+          echo "  - C++/Qt projects: cmake --build ."
+          echo "  - Python projects: pytest"
+          echo "  - Node projects: npm test"
+          echo ""
+          echo "The full project source is available at: $(pwd)"
+          echo "Files count: $(find . -type f | wc -l)"
+
+      # ────────────────────────────────────────────────────
+      # Status Callbacks
+      # ────────────────────────────────────────────────────
 
       - name: "🔔 Update GitLab Status (Success)"
         if: success()
@@ -150,9 +232,10 @@ jobs:
             "https://gitlab.com/api/v4/projects/${{ inputs.gitlab_project_id }}/statuses/${{ inputs.gitlab_sha }}" \
             -H "PRIVATE-TOKEN: $GL_TOKEN" \
             -d "state=success" \
-            -d "description=Patch applied and evaluated successfully" \
+            -d "description=Patch applied (${{ steps.apply_patch.outputs.status }}) and evaluated" \
             -d "context=Shadow-Runner/Mirror" \
             -d "target_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "✅ GitLab status updated to success"
 
       - name: "🔔 Update GitLab Status (Failure)"
         if: failure()
@@ -166,3 +249,4 @@ jobs:
             -d "description=Patch evaluation failed. Check GitHub Actions log." \
             -d "context=Shadow-Runner/Mirror" \
             -d "target_url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "❌ GitLab status updated to failed"
