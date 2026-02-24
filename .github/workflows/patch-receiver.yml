@@ -51,6 +51,8 @@ jobs:
   receive-and-evaluate:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: write
 
     steps:
       - name: "📋 Job Info"
