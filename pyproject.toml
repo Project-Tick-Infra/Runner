@@ -1,0 +1,69 @@
+[tool.poetry]
+name = 'Modmail'
+version = '4.1.0'
+description = "Modmail is similar to Reddit's Modmail, both in functionality and purpose. It serves as a shared inbox for server staff to communicate with their users in a seamless way."
+license = 'AGPL-3.0-only'
+authors = [
+    'kyb3r <noemail@example.com>',
+    '4jr <noemail@example.com>',
+    'Taki <noemail@example.com>'
+]
+readme = 'README.md'
+repository = 'https://github.com/modmail-dev/modmail'
+homepage = 'https://github.com/modmail-dev/modmail'
+keywords = ['discord', 'modmail']
+packages = [
+    {include = "cogs"},
+    {include = "modmail"},
+    {include = "plugins"}
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+aiodns = "^3.1.1"
+aiohttp = "^3.9.0"
+aiosignal = "^1.3.1"
+async-timeout = {version = "^4.0.3", python = "<3.11"}
+attrs = "^23.1.0"
+brotli = "^1.1.0"
+cairocffi = "^1.6.1"
+cairosvg = "^2.7.1"
+certifi = "*"
+cffi = "^1.16.0"
+charset-normalizer = "^3.3.2"
+colorama = "^0.4.6"
+cssselect2 = "^0.7.0"
+defusedxml = "^0.7.1"
+discord-py = {version = "^2.3.2", extras = ["speed"]}
+dnspython = "^2.4.2"
+emoji = "^2.8.0"
+frozenlist = "^1.4.0"
+idna = "^3.4"
+isodate = "^0.6.1"
+lottie = {version = "^0.7.0", extras = ["pdf"]}
+motor = "^3.3.2"
+multidict = "^6.0.4"
+natural = "^0.2.0"
+orjson = "^3.9.10"
+packaging = "^23.2"
+parsedatetime = "^2.6"
+pillow = "^10.1.0"
+pycares = "^4.4.0"
+pycparser = "^2.21"
+pymongo = {version = "^4.6.0", extras = ["srv"]}
+python-dateutil = "^2.8.2"
+python-dotenv = "^1.0.0"
+requests = "^2.31.0"
+six = "^1.16.0"
+tinycss2 = "^1.2.1"
+urllib3 = "^2.1.0"
+uvloop = "^0.19.0"
+webencodings = "^0.5.1"
+yarl = "^1.9.3"
+
+[tool.poetry.scripts]
+modmail = "modmail:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
