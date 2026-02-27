@@ -1,0 +1,54 @@
+---
+stages:
+  - lint
+  - build
+  - install
+  - test
+  - bot
+
+default:
+  tags:
+    - yunohost-ci
+  # All jobs are interruptible by default
+  interruptible: true
+
+code_quality:
+  tags:
+    - docker
+  rules:
+    - if: $CI_COMMIT_TAG # Only for tags
+
+
+code_quality_html:
+  extends: code_quality
+  variables:
+    REPORT_FORMAT: html
+  artifacts:
+    paths: [gl-code-quality-report.html]
+  rules:
+    - if: $CI_COMMIT_TAG # Only for tags
+
+
+# see: https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" # If we move to gitlab one day
+    - if: $CI_PIPELINE_SOURCE == "external_pull_request_event" # For github PR
+    - if: $CI_COMMIT_TAG # For tags
+    - if: $CI_COMMIT_REF_NAME == "ci-format-$CI_DEFAULT_BRANCH"  # Ignore black formatting branch created by the CI
+      when: never
+    - if: $CI_COMMIT_REF_NAME == "actions/black"  # Ignore black formatting branch created by the CI
+      when: never
+    - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH  && $CI_PIPELINE_SOURCE == "push" # If it's not the default branch and if it's a push, then do not trigger a build
+      when: never
+    - when: always
+
+variables:
+  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_COMMIT_SHA/$CI_JOB_ID'
+  YNH_SOURCE: "https://github.com/yunohost"
+  YNH_DEBIAN: "bookworm"
+  YNH_SKIP_DIAGNOSIS_DURING_UPGRADE: "true"
+
+include:
+  - template: Code-Quality.gitlab-ci.yml
+  - local: .gitlab/ci/*.gitlab-ci.yml

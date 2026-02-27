@@ -1,0 +1,64 @@
+dnsmasq:
+  test_conf: dnsmasq --test
+dovecot:
+  log: [/var/log/mail.log,/var/log/mail.err]
+  needs_exposed_ports: [993]
+  category: email
+fail2ban:
+  log: /var/log/fail2ban.log
+  category: security
+  test_conf: fail2ban-server --test
+mysql:
+  log: [/var/log/mysql.log,/var/log/mysql.err,/var/log/mysql/error.log]
+  actual_systemd_service: mariadb
+  category: database
+  ignore_if_package_is_not_installed: mariadb-server
+nginx:
+  log: /var/log/nginx
+  test_conf: nginx -t
+  needs_exposed_ports: [80, 443]
+  category: web
+# Yunohost will dynamically add installed php-fpm services (7.3, 7.4, 8.0, ...) in services.py
+#php7.4-fpm:
+#  log: /var/log/php7.4-fpm.log
+#  test_conf: php-fpm7.4 --test
+#  category: web
+opendkim:
+  category: email
+  test_conf: opendkim -n
+postfix:
+  log: [/var/log/mail.log,/var/log/mail.err]
+  actual_systemd_service: postfix@-
+  needs_exposed_ports: [25, 587]
+  category: email
+postgresql:
+  actual_systemd_service: 'postgresql@15-main'
+  category: database
+  ignore_if_package_is_not_installed: postgresql-15
+redis-server:
+  log: /var/log/redis/redis-server.log
+  category: database
+  ignore_if_package_is_not_installed: redis-server
+slapd:
+  category: database
+  test_conf: slapd -Tt
+ssh:
+  log: /var/log/auth.log
+  test_conf: sshd -t
+  needs_exposed_ports: [22]
+  category: admin
+yunohost-portal-api:
+  log: /var/log/yunohost-portal-api.log
+  category: userportal
+yunohost-api:
+  log: /var/log/yunohost/yunohost-api.log
+  category: admin
+yunohost-firewall:
+  need_lock: true
+  test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
+  category: security
+yunomdns:
+  category: mdns
+php5-fpm: null
+php7.0-fpm: null
+php7.3-fpm: null

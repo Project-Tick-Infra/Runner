@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2024 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+set -e
+
+do_configure() {
+
+    mkdir -p /etc/yunohost
+    mkdir -p /etc/yunohost/apps
+    mkdir -p /etc/yunohost/portal
+
+    if [ ! -f /etc/yunohost/installed ]; then
+        # If apps/ is not empty, we're probably already installed in the past and
+        # something funky happened ...
+        if [ -d /etc/yunohost/apps/ ] && ls /etc/yunohost/apps/* >/dev/null 2>&1; then
+            echo "Sounds like /etc/yunohost/installed mysteriously disappeared ... You should probably contact the Yunohost support ..."
+        else
+            bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
+            bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
+            bash /usr/share/yunohost/hooks/conf_regen/09-nslcd init
+            bash /usr/share/yunohost/hooks/conf_regen/46-nsswitch init
+            bash /usr/share/yunohost/hooks/conf_regen/43-dnsmasq init
+            bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
+            bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
+            bash /usr/share/yunohost/hooks/conf_regen/37-mdns init
+        fi
+    else
+        echo "Regenerating configuration, this might take a while..."
+        yunohost app ssowatconf
+        yunohost tools regen-conf --output-as none
+
+        echo "Launching migrations..."
+        yunohost tools migrations run --auto
+
+        echo "Re-diagnosing server health..."
+        if [[ -n "${YNH_SKIP_DIAGNOSIS_DURING_UPGRADE:-}" ]]; then
+            echo "(Skipping)"
+        else
+            yunohost diagnosis run --force
+        fi
+
+        echo "Refreshing app catalog..."
+        yunohost tools update apps --output-as none || true
+    fi
+
+    systemctl restart yunohost-portal-api
+
+    # Trick to let yunohost handle the restart of the API,
+    # to prevent the webadmin from cutting the branch it's sitting on
+    if systemctl is-enabled yunohost-api --quiet
+    then
+        if [[ "${YUNOHOST_API_RESTART_WILL_BE_HANDLED_BY_YUNOHOST:-}" != "yes" ]];
+        then
+            systemctl restart yunohost-api
+        else
+            echo "(Delaying the restart of yunohost-api, this should automatically happen after the end of this upgrade)"
+            cat << EOF | at -M now >/dev/null 2>&1
+# Wait for apt / dpkg / yunohost to not be up anymore, hence the upgrade finished
+
+while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
+do
+   sleep 3
+done
+
+# Restart yunohost-api, though only if it wasnt already restarted by something else in the last 60 secs
+
+API_START_TIMESTAMP="\$(date --date="\$(systemctl show yunohost-api | grep ExecMainStartTimestamp= | awk -F= '{print \$2}')" +%s)"
+
+if [ "\$(( \$(date +%s) - \$API_START_TIMESTAMP ))" -ge 60 ];
+then
+    systemctl restart yunohost-api
+fi
+EOF
+        fi
+    fi
+}
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+case "$1" in
+    configure)
+        do_configure
+        ;;
+    abort-upgrade | abort-remove | abort-deconfigure) ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
